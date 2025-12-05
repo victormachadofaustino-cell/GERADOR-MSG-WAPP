@@ -161,23 +161,23 @@ button.btn-icon { flex: 0 0 auto; padding: 8px 12px; }
 .modal-body { padding: 20px; max-height: 70vh; overflow-y: auto; }
 .modal-footer { padding: 15px 20px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px; background: var(--fundo-elemento); border-radius: 0 0 12px 12px; }
 
-/* --- LOGIN (Modernizado) --- */
+/* --- LOGIN (Reformulado: Moderno, Profissional) --- */
 #login-container { 
     display: flex; 
     flex-direction: column; 
     align-items: center; 
     justify-content: center; 
     height: 100vh; 
-    background: var(--fundo-pagina); 
+    background: var(--fundo-pagina); /* Fundo suave */
     padding: 20px;
 }
 .login-box { 
-    width: 100%; /* Ocupa 100% da largura em mobile */
-    max-width: 400px; /* Um pouco mais largo que antes */
-    padding: 30px; 
-    background: white; 
-    border-radius: 12px; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1); /* Sombra mais suave */
+    width: 100%; 
+    max-width: 400px; /* Largura ideal para desktop/tablet */
+    padding: 35px; /* Espaçamento interno profissional */
+    background: var(--fundo-elemento); /* Fundo branco puro */
+    border-radius: 16px; /* Cantos bem arredondados */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1); /* Sombra suave e elevada */
 }
 
 /* Título e Subtítulo */
@@ -187,42 +187,52 @@ button.btn-icon { flex: 0 0 auto; padding: 8px 12px; }
     margin-bottom: 5px; 
     color: #333; 
     font-size: 1.8em;
+    font-weight: 700;
     text-align: center;
 }
 .login-box p {
     margin-bottom: 25px;
     color: #777;
+    text-align: center;
 }
 
-/* Wrapper da Senha e Botão de Toggle */
+/* Wrapper da Senha e Alinhamento */
 .password-wrapper { 
     position: relative; 
+    display: flex; /* Novo: Usa Flexbox para o wrapper principal */
+    flex-direction: column;
 }
 
+/* Garante que o campo de input tenha espaço interno para o ícone */
+.password-wrapper input {
+    padding-right: 45px; /* Reserva espaço para o botão do ícone */
+}
+
+/* Botão de Toggle (O Olho) */
 #toggle-password { 
     position: absolute; 
-    top: 50%; /* Centraliza verticalmente */
-    right: 1px; 
-    transform: translateY(-50%);
+    right: 5px; /* Alinha à direita */
+    top: 36px; /* Ajusta a posição vertical dentro da caixa */
     background: none; 
     border: none; 
     cursor: pointer; 
     color: #777; 
-    padding: 10px; /* Aumenta a área de toque */
-    height: auto; /* Remove a altura mínima forçada pelos botões gerais */
-    min-height: 0; 
+    padding: 8px; /* Aumenta a área de toque (hitbox) */
+    min-height: 0; /* Desfaz a regra geral de min-height */
+    opacity: 0.8;
+}
+#toggle-password:hover {
+    opacity: 1;
 }
 
-/* Ajusta o padding para que o ícone não toque no texto */
-.password-wrapper input {
-    padding-right: 40px; 
-}
-
-/* Botão Entrar (Usa o estilo padrão, mas garante largura total) */
+/* Botão Entrar */
 .login-box button[type="submit"] {
     width: 100%;
     margin-top: 20px;
-    padding: 12px;
+    padding: 14px; /* Botão mais alto e mais fácil de clicar */
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
 }
 
 /* Links (Esqueceu a Senha) */
@@ -234,6 +244,7 @@ button.btn-icon { flex: 0 0 auto; padding: 8px 12px; }
 .login-links a {
     color: var(--cor-primaria);
     text-decoration: none;
+    font-weight: 500;
 }
 .login-links a:hover {
     text-decoration: underline;

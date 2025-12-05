@@ -80,7 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const paginas = document.querySelectorAll('.pagina');
     
     const formEvento = document.getElementById('formEvento');
-    const inpData = document.getElementById('data_hora');
+    // --- CORREÇÃO DO ERRO: Referenciando novos campos de Data/Hora ---
+    const inpData = document.getElementById('data'); // NOVO: Campo de data
+    const inpHora = document.getElementById('hora'); // NOVO: Campo de hora
     const inpDescData = document.getElementById('desc_data');
     const selTipo = document.getElementById('select_tipo_evento');
     const selSigla = document.getElementById('select_titulo');
@@ -123,7 +125,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('releases-modal-btn-fechar').onclick=()=>hideModal(relModal);
 
     // --- FORM LOGIC ---
-    inpData.addEventListener('change', (e) => { if(e.target.value) inpDescData.value = calcularDescricaoData(new Date(e.target.value)); });
+    // NOVO LISTENER: LIGAÇÃO COM O CAMPO 'data'
+    inpData.addEventListener('change', (e) => { 
+        if(e.target.value) inpDescData.value = calcularDescricaoData(new Date(e.target.value)); 
+    });
 
     selTipo.addEventListener('change', (e) => {
         const txt = e.target.options[e.target.selectedIndex]?.text || '';
@@ -198,8 +203,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const getTxt = (id) => { const el=document.getElementById(id); return el.options[el.selectedIndex]?.text||''; };
             const tipoNome = getTxt('select_tipo_evento');
             const isEnsaio = tipoNome.toLowerCase().includes('ensaio');
+
+            // --- NOVO: Combina Data e Hora ---
+            if (!inpData.value || !inpHora.value) throw new Error("Data e Hora são obrigatórios.");
+            const data_hora_final = `${inpData.value}T${inpHora.value}`; 
+
             const data = {
-                data_hora: inpData.value, desc_data: inpDescData.value,
+                data_hora: data_hora_final, // Usa a string combinada
+                desc_data: inpDescData.value,
                 link_externo: isEnsaio?'':document.getElementById('link_externo').value,
                 observacoes_extra: isEnsaio?'':document.getElementById('observacoes_extra').value,
                 is_extraordinaria: isEnsaio?false:document.getElementById('is_extraordinaria').checked,
@@ -254,7 +265,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if(btn.classList.contains('btn-edit')) {
             const ev = eventosDB.find(x=>x.id===id);
             document.getElementById('eventoId').value = ev.id;
-            inpData.value = ev.data_hora; inpDescData.value = ev.desc_data;
+            
+            // --- NOVO: Carrega Data e Hora separadamente ---
+            if(ev.data_hora) {
+                const [d, t] = ev.data_hora.split('T');
+                inpData.value = d;
+                inpHora.value = t;
+            }
+            inpDescData.value = ev.desc_data;
+            
             document.getElementById('is_extraordinaria').checked = ev.is_extraordinaria;
             document.getElementById('link_externo').value = ev.link_externo||'';
             document.getElementById('observacoes_extra').value = ev.observacoes_extra||'';
@@ -502,8 +521,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const av=document.getElementById('profile-avatar-btn'), dr=document.getElementById('profile-dropdown');
     av.onclick=()=>dr.classList.toggle('show'); window.onclick=(e)=>{if(!av.contains(e.target)&&!dr.contains(e.target))dr.classList.remove('show')};
     document.getElementById('checkLinkExterno').addEventListener('change', (e) => document.getElementById('linkExternoWrapper').style.display = e.target.checked ? 'block' : 'none');
-
-// --- REGISTRO PWA (NOVO) ---
+    
+    // --- REGISTRO PWA (NOVO) ---
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/service-worker.js')
@@ -515,4 +534,4 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
         });
     }
-}); // ESTE CHAVE DEVE SER A ÚLTIMA LINHA DO ARQUIVO
+});
