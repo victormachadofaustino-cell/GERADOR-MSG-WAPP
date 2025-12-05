@@ -1,8 +1,15 @@
 /* --- ESTILOS GERAIS --- */
+:root {
+    --cor-primaria: #1A73E8; /* NOVO AZUL: Mais moderno e vibrante (tom do Google/Material) */
+    --cor-secundaria: #004d99; /* Azul escuro para hover */
+    --fundo-pagina: #f8f9fa; /* Fundo mais claro e suave */
+    --fundo-elemento: #ffffff; /* Fundo branco puro para cards */
+}
+
 body { 
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
     line-height: 1.6; 
-    background-color: #f4f7f6; 
+    background-color: var(--fundo-pagina); /* Usa a nova variável de fundo */
     color: #333; 
     margin: 0; 
     padding-bottom: 40px;
@@ -10,7 +17,7 @@ body {
 
 /* --- HEADER --- */
 .header { 
-    background-color: #0056b3; 
+    background-color: var(--cor-primaria); /* Usa a nova cor primária */
     color: white; 
     padding: 15px 20px; 
     display: flex; 
@@ -37,20 +44,21 @@ body {
 }
 .profile-dropdown {
     display: none; position: absolute; right: 0; top: 45px;
-    background-color: white; color: #333;
+    background-color: var(--fundo-elemento); /* Fundo branco */
+    color: #333;
     border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);
     width: 260px; z-index: 100; border: 1px solid #eee; overflow: hidden;
 }
 .profile-dropdown.show { display: block; }
 .profile-dropdown .profile-email { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #eee; font-size: 0.85em; color: #666; }
 .profile-dropdown .profile-email span { display: block; font-weight: bold; color: #333; font-size: 1.1em; margin-top: 2px; }
-.profile-dropdown a { display: block; padding: 12px 15px; text-decoration: none; color: #0056b3; font-size: 0.95em; transition: background 0.2s; }
+.profile-dropdown a { display: block; padding: 12px 15px; text-decoration: none; color: var(--cor-primaria); /* Usa a nova cor primária */ font-size: 0.95em; transition: background 0.2s; }
 .profile-dropdown a:hover { background-color: #f1f3f5; }
 .profile-dropdown a#btn-logout { color: #dc3545; border-top: 1px solid #eee; }
 
 /* --- NAVEGAÇÃO (Menu de Módulos) --- */
 nav { 
-    background-color: #fff; 
+    background-color: var(--fundo-elemento); /* Fundo branco */
     display: flex; 
     justify-content: center; 
     flex-wrap: wrap; 
@@ -63,8 +71,8 @@ nav button {
     padding: 15px 20px; cursor: pointer; font-size: 15px; font-weight: 500;
     border-bottom: 3px solid transparent; transition: all 0.3s;
 }
-nav button:hover { color: #0056b3; background-color: #f8f9fa; }
-nav button.ativa { color: #0056b3; border-bottom-color: #0056b3; background-color: #f1f8ff; }
+nav button:hover { color: var(--cor-primaria); background-color: #f8f9fa; }
+nav button.ativa { color: var(--cor-primaria); border-bottom-color: var(--cor-primaria); background-color: #f1f8ff; }
 
 /* --- LAYOUT PAGINAS --- */
 .pagina { display: none; padding: 20px; max-width: 1200px; margin: 0 auto; }
@@ -72,10 +80,10 @@ nav button.ativa { color: #0056b3; border-bottom-color: #0056b3; background-colo
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
 #paginaGestao.ativa { display: flex; flex-wrap: wrap; gap: 20px; }
-.coluna { flex: 1; min-width: 320px; padding: 25px; background: #fff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eee; }
+.coluna { flex: 1; min-width: 320px; padding: 25px; background: var(--fundo-elemento); /* Fundo branco */ border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eee; }
 
 /* --- FORMULARIOS --- */
-h2 { border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; color: #0056b3; margin-top: 0; font-size: 1.4em; }
+h2 { border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; color: var(--cor-primaria); /* Usa a nova cor primária */ margin-top: 0; font-size: 1.4em; }
 label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.9em; color: #444; }
 input[type="text"], input[type="email"], input[type="password"], input[type="datetime-local"], input[type="month"], textarea, select {
     width: 100%; padding: 10px; margin-top: 5px; 
@@ -83,18 +91,19 @@ input[type="text"], input[type="email"], input[type="password"], input[type="dat
     box-sizing: border-box; font-size: 15px;
     transition: border-color 0.3s;
 }
-input:focus, select:focus, textarea:focus { border-color: #0056b3; outline: none; }
+input:focus, select:focus, textarea:focus { border-color: var(--cor-primaria); outline: none; }
 
 /* --- BOTOES GERAIS --- */
 button { 
-    background-color: #007bff; color: white; 
+    background-color: var(--cor-primaria); /* Usa a nova cor primária */
+    color: white; 
     padding: 10px 15px; border: none; border-radius: 6px; 
     cursor: pointer; font-size: 15px; font-weight: 500;
     transition: background 0.2s, transform 0.1s;
-    min-height: 44px; /* MELHORIA: Torna o botão mais fácil de tocar no celular */
+    min-height: 44px; 
 }
 button:active { transform: scale(0.98); }
-button:hover { background-color: #0056b3; }
+button:hover { background-color: var(--cor-secundaria); /* Usa a cor escura para hover */ }
 button.secundario { background-color: #6c757d; }
 button.btn-add { background-color: #28a745; font-size: 13px; padding: 6px 12px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; min-height: 35px; }
 button.btn-danger { background-color: #dc3545; }
@@ -104,12 +113,12 @@ button:disabled { background-color: #ccc; cursor: not-allowed; }
 
 /* --- LISTA DE EVENTOS --- */
 .filter-buttons { margin-bottom: 15px; display: flex; gap: 5px; flex-wrap: wrap; }
-.filter-buttons button { background-color: #fff; color: #555; border: 1px solid #ddd; padding: 6px 12px; font-size: 13px; border-radius: 20px; }
-.filter-buttons button.ativa { background-color: #007bff; color: white; border-color: #007bff; }
+.filter-buttons button { background-color: var(--fundo-elemento); color: #555; border: 1px solid #ddd; padding: 6px 12px; font-size: 13px; border-radius: 20px; }
+.filter-buttons button.ativa { background-color: var(--cor-primaria); color: white; border-color: var(--cor-primaria); }
 
 #listaEventos { max-height: 750px; overflow-y: auto; padding-right: 5px; }
 .evento-card { 
-    border: 1px solid #eee; background: #fff; 
+    border: 1px solid #eee; background: var(--fundo-elemento); 
     border-radius: 8px; margin-bottom: 12px; 
     box-shadow: 0 2px 4px rgba(0,0,0,0.03);
     transition: transform 0.2s;
@@ -118,15 +127,15 @@ button:disabled { background-color: #ccc; cursor: not-allowed; }
 .evento-header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #fcfcfc; border-bottom: 1px solid #f0f0f0; border-radius: 8px 8px 0 0; }
 .evento-header h3 { margin: 0; font-size: 1em; font-weight: 600; color: #333; }
 .tag-extra { font-size: 0.75em; background: #ffebee; color: #c62828; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-left: 5px; display: inline-block; }
-.expand-icon { font-size: 1.2em; color: #0056b3; font-weight: bold; }
-.evento-detalhes { padding: 15px; background: #fff; display: none; border-radius: 0 0 8px 8px; }
+.expand-icon { font-size: 1.2em; color: var(--cor-primaria); font-weight: bold; }
+.evento-detalhes { padding: 15px; background: var(--fundo-elemento); display: none; border-radius: 0 0 8px 8px; }
 .evento-detalhes p { margin: 5px 0; font-size: 0.95em; color: #555; }
 .evento-botoes-detalhe { margin-top: 15px; border-top: 1px solid #eee; padding-top: 12px; display: flex; gap: 8px; }
 .evento-botoes-detalhe button { flex: 1; padding: 8px; font-size: 13px; }
 button.btn-icon { flex: 0 0 auto; padding: 8px 12px; }
 
 /* --- CONFIGURAÇÕES & TEMPLATES (LISTAS) --- */
-.config-list { list-style: none; padding: 0; margin: 0; border: 1px solid #eee; border-radius: 6px; background: #fff; }
+.config-list { list-style: none; padding: 0; margin: 0; border: 1px solid #eee; border-radius: 6px; background: var(--fundo-elemento); }
 .config-list-item { 
     display: flex; justify-content: space-between; align-items: center; 
     padding: 12px 15px; border-bottom: 1px solid #f4f4f4; 
@@ -144,27 +153,27 @@ button.btn-icon { flex: 0 0 auto; padding: 8px 12px; }
 .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 1000; display: none; backdrop-filter: blur(2px); }
 .modal {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    background: var(--fundo-elemento); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     z-index: 1001; width: 90%; max-width: 500px; display: none;
     border: 1px solid #fff;
 }
 .modal-header { padding: 15px 20px; border-bottom: 1px solid #eee; background: #f8f9fa; border-radius: 12px 12px 0 0; }
 .modal-body { padding: 20px; max-height: 70vh; overflow-y: auto; }
-.modal-footer { padding: 15px 20px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px; background: #fff; border-radius: 0 0 12px 12px; }
+.modal-footer { padding: 15px 20px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px; background: var(--fundo-elemento); border-radius: 0 0 12px 12px; }
 
 /* --- LOGIN --- */
-#login-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #e9ecef; }
-.login-box { width: 90%; max-width: 380px; padding: 40px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+#login-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: var(--fundo-pagina); }
+.login-box { width: 90%; max-width: 380px; padding: 40px; background: var(--fundo-elemento); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
 .password-wrapper { position: relative; }
 #toggle-password { position: absolute; top: 38px; right: 5px; background: none; border: none; cursor: pointer; color: #777; }
 .login-links { text-align: right; margin-top: 15px; font-size: 0.9em; }
 
 /* --- MÓDULO 3 (SIDEBAR) --- */
-.settings-layout { display: flex; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); min-height: 600px; border: 1px solid #eee; }
+.settings-layout { display: flex; background: var(--fundo-elemento); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); min-height: 600px; border: 1px solid #eee; }
 .settings-sidebar { width: 250px; background: #f8f9fa; border-right: 1px solid #eee; padding: 20px 0; flex-shrink: 0; }
 .settings-content { flex: 1; padding: 25px; }
 .settings-sidebar button.nav-btn { width: 100%; text-align: left; border-radius: 0; margin: 0; padding: 12px 20px; color: #555; border-left: 4px solid transparent; }
-.settings-sidebar button.nav-btn.ativa { background: #e2e6ea; color: #0056b3; border-left-color: #0056b3; font-weight: bold; }
+.settings-sidebar button.nav-btn.ativa { background: #e2e6ea; color: var(--cor-primaria); border-left-color: var(--cor-primaria); font-weight: bold; }
 
 /* --- TEXTAREA & GERADOR --- */
 #resultado, #paginaGerador textarea { 
@@ -173,26 +182,26 @@ button.btn-icon { flex: 0 0 auto; padding: 8px 12px; }
     border-radius: 6px; line-height: 1.4; font-size: 14px;
 }
 
-/* --- RESPONSIVIDADE (MOBILE) - A MÁGICA ACONTECE AQUI --- */
+/* --- RESPONSIVIDADE (MOBILE) --- */
 @media (max-width: 768px) {
     /* 1. Navegação em Grid 2x2 Compacto (Aprimorada) */
     nav { 
         display: grid; 
-        grid-template-columns: 1fr 1fr; /* 2 botões por linha */
+        grid-template-columns: 1fr 1fr;
         gap: 0; 
         padding: 0;
     }
     nav button {
         width: 100%;
-        padding: 15px 5px; /* MAIOR ESPAÇO: Aumenta a área de toque vertical */
-        font-size: 14px; /* MELHOR LEITURA: Um pouco maior que o original mobile */
+        padding: 15px 5px; 
+        font-size: 14px; 
         text-align: center;
         border-bottom: 1px solid #eee;
         border-right: 1px solid #eee;
         border-radius: 0;
     }
     nav button.ativa {
-        border-bottom: 3px solid #0056b3;
+        border-bottom: 3px solid var(--cor-primaria);
     }
 
     /* 2. Ajuste de Páginas e Colunas */
@@ -200,7 +209,7 @@ button.btn-icon { flex: 0 0 auto; padding: 8px 12px; }
     .coluna { 
         padding: 15px; 
         min-width: 100%; 
-        box-shadow: none; /* Remove a sombra em mobile para um visual mais limpo */
+        box-shadow: none; 
         border: none;
     }
     
@@ -213,36 +222,36 @@ button.btn-icon { flex: 0 0 auto; padding: 8px 12px; }
         border: 1px solid #eee; 
         border-radius: 20px; 
         margin-right: 5px; 
-        padding: 8px 12px; /* MELHORIA: Aumenta o padding para toque */
+        padding: 8px 12px; 
         font-size: 13px; 
     }
-    .settings-sidebar button.nav-btn.ativa { background: #0056b3; color: white; border: none; }
+    .settings-sidebar button.nav-btn.ativa { background: var(--cor-primaria); color: white; border: none; }
     
     /* 4. Listas de Templates/Configurações (Evitar quebra) */
     .config-list-item { 
         flex-direction: column; 
         align-items: flex-start; 
         gap: 10px; 
-        padding: 15px; /* MELHORIA: Mais espaço dentro do item da lista */
+        padding: 15px; 
     }
     .config-item-text { width: 100%; padding: 0; }
-    .config-item-text .sigla { font-size: 1.1em; word-break: break-word; } /* Texto principal maior */
+    .config-item-text .sigla { font-size: 1.1em; word-break: break-word; }
     .config-item-actions { 
         width: 100%; 
         display: flex; 
-        justify-content: space-between; /* MELHORIA: Botões Edit/Delete ficam separados, um em cada ponta */
+        justify-content: space-between; 
         border-top: 1px dashed #eee;
         padding-top: 8px;
     }
     .config-item-actions button {
-        flex: 1; /* Botões grandes para toque */
+        flex: 1; 
         text-align: center;
-        padding: 10px; /* MELHORIA: Aumenta o padding do botão */
+        padding: 10px; 
     }
 
     /* 5. Colunas do Gerenciador de Eventos (col-form e col-lista) */
     #paginaGestao.ativa { flex-direction: column; }
     #col-lista { 
-        order: -1; /* Coloca a lista de eventos (Lista de Eventos) acima do formulário no celular */
+        order: -1;
     }
 }
