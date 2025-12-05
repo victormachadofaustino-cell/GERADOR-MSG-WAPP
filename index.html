@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Agenda v11.0 (UI Master)</title>
+    <title>Gerador de Agenda Musical CCB</title>
     <link rel="stylesheet" href="style.css">
     
     <meta name="theme-color" content="#1A73E8"> 
@@ -52,14 +52,13 @@
     
     <div id="login-container">
         <div class="login-box">
-            <h2>Gerador de Agenda</h2>
+            <h2>Gerador de Agenda Musical CCB</h2>
             <p style="text-align: center; color: #555;">Por favor, faça o login para continuar.</p>
             <form id="login-form">
                 <div class="form-group">
                     <label for="login-email">E-mail:</label>
                     <input type="email" id="login-email" required autocomplete="email">
                 </div>
-                
                 <div class="form-group password-wrapper">
                     <label for="login-password">Senha:</label>
                     <input type="password" id="login-password" required autocomplete="current-password">
@@ -70,7 +69,6 @@
                         </svg>
                     </button>
                 </div>
-                
                 <div class="login-links">
                     <a id="forgot-password" href="#">Esqueceu a senha?</a>
                 </div>
@@ -82,7 +80,7 @@
     
     <div id="app-container">
         <header class="header">
-            <h1>Gerenciador de Agenda (v11.0)</h1>
+            <h1>Gerador de Agenda Musical CCB</h1>
             
             <div class="profile-menu">
                 <button class="profile-avatar" id="profile-avatar-btn" aria-haspopup="true" aria-expanded="false">VF</button>
@@ -95,16 +93,9 @@
             </div>
         </header>
 
-        <nav>
-            <button id="btnNavGerador" class="ativa">Módulo 1: Gerador</button>
-            <button id="btnNavGestao">Módulo 2: Eventos</button>
-            <button id="btnNavConfig">Módulo 3: Configurações</button>
-            <button id="btnNavTemplates">Módulo 4: Templates</button>
-        </nav>
-
         <main id="paginaGerador" class="pagina ativa">
             <div class="coluna" id="col-output">
-                <h2>Gerador de Mensagens (Massa)</h2>
+                <h2>Gerador de Mensagens</h2>
                 
                 <div class="botoes-template">
                     <label for="select_mes_gerador">Mês da Agenda:</label>
@@ -269,7 +260,7 @@
         </main>
         
         <footer>
-            <p>Secretaria da Música Regional Jundiaí&nbsp;® 11/2025</p>
+            <p>Secretaria da Música Regional Jundiaí &reg; 2025</p>
         </footer>
     </div> 
     
@@ -277,5 +268,24 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="script.js"></script>
+
+    <nav class="mobile-nav-footer">
+        <button id="btnNavGerador" class="ativa">
+            <span class="icon">⚙️</span>
+            <span class="label">Gerador</span>
+        </button>
+        <button id="btnNavGestao">
+            <span class="icon">🗓️</span>
+            <span class="label">Eventos</span>
+        </button>
+        <button id="btnNavConfig">
+            <span class="icon">🛠️</span>
+            <span class="label">Configurações</span>
+        </button>
+        <button id="btnNavTemplates">
+            <span class="icon">📄</span>
+            <span class="label">Templates</span>
+        </button>
+    </nav>
 </body>
 </html>

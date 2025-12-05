@@ -80,9 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const paginas = document.querySelectorAll('.pagina');
     
     const formEvento = document.getElementById('formEvento');
-    // --- CORREÇÃO DO ERRO: Referenciando novos campos de Data/Hora ---
-    const inpData = document.getElementById('data'); // NOVO: Campo de data
-    const inpHora = document.getElementById('hora'); // NOVO: Campo de hora
+    const inpData = document.getElementById('data'); 
+    const inpHora = document.getElementById('hora'); 
     const inpDescData = document.getElementById('desc_data');
     const selTipo = document.getElementById('select_tipo_evento');
     const selSigla = document.getElementById('select_titulo');
@@ -125,7 +124,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('releases-modal-btn-fechar').onclick=()=>hideModal(relModal);
 
     // --- FORM LOGIC ---
-    // NOVO LISTENER: LIGAÇÃO COM O CAMPO 'data'
     inpData.addEventListener('change', (e) => { 
         if(e.target.value) inpDescData.value = calcularDescricaoData(new Date(e.target.value)); 
     });
@@ -204,12 +202,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const tipoNome = getTxt('select_tipo_evento');
             const isEnsaio = tipoNome.toLowerCase().includes('ensaio');
 
-            // --- NOVO: Combina Data e Hora ---
             if (!inpData.value || !inpHora.value) throw new Error("Data e Hora são obrigatórios.");
             const data_hora_final = `${inpData.value}T${inpHora.value}`; 
 
             const data = {
-                data_hora: data_hora_final, // Usa a string combinada
+                data_hora: data_hora_final, 
                 desc_data: inpDescData.value,
                 link_externo: isEnsaio?'':document.getElementById('link_externo').value,
                 observacoes_extra: isEnsaio?'':document.getElementById('observacoes_extra').value,
@@ -249,9 +246,13 @@ document.addEventListener('DOMContentLoaded', () => {
         arr.forEach(ev => {
             const d = formatarDataHora(ev.data_hora);
             const isEnsaio = ev.tipo_evento_nome.toLowerCase().includes('ensaio');
-            const tit = isEnsaio ? `🎵 ${d.data} - Ensaio - ${ev.cidade_nome}` : `👔 ${d.data} - ${ev.titulo_sigla}`;
+            
+            // NOVO: Adiciona a data, hora e cidade visíveis no header
+            const infoSecundaria = `<span>${d.diaSemana}, ${d.data} &middot; ${d.hora} &middot; ${ev.cidade_nome}</span>`;
+            const tit = isEnsaio ? `🎵 Ensaio` : `👔 ${ev.titulo_sigla}`;
+            
             const div = document.createElement('div'); div.className='evento-card';
-            div.innerHTML = `<div class="evento-header"><h3>${tit} ${ev.is_extraordinaria?'<span class="tag-extra">[EXTRA]</span>':''}</h3><span class="expand-icon">+</span></div>
+            div.innerHTML = `<div class="evento-header"><h3>${tit} ${ev.is_extraordinaria?'<span class="tag-extra">[EXTRA]</span>':''}</h3>${infoSecundaria}<span class="expand-icon">+</span></div>
             <div class="evento-detalhes" style="display:none"><p><strong>Data:</strong> ${d.dataExtenso}</p><p><strong>Local:</strong> ${ev.comum_nome}</p><div class="evento-botoes-detalhe"><button class="btn-lembrete" data-id="${ev.id}">Lembrete</button><button class="btn-convite" data-id="${ev.id}">Convite</button><button class="btn-edit btn-icon" data-id="${ev.id}">✏️</button><button class="btn-delete btn-icon" data-id="${ev.id}">🗑️</button></div></div>`;
             div.querySelector('.evento-header').onclick=()=>{const b=div.querySelector('.evento-detalhes'); b.style.display=b.style.display==='block'?'none':'block'};
             cont.appendChild(div);
@@ -266,7 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const ev = eventosDB.find(x=>x.id===id);
             document.getElementById('eventoId').value = ev.id;
             
-            // --- NOVO: Carrega Data e Hora separadamente ---
             if(ev.data_hora) {
                 const [d, t] = ev.data_hora.split('T');
                 inpData.value = d;
@@ -301,9 +301,9 @@ document.addEventListener('DOMContentLoaded', () => {
              const map = { 
                  '\\[sigla\\]':ev.titulo_sigla, '\\[titulo\\]':ev.titulo_nome, '\\[data\\]':d.data, '\\[hora\\]':d.hora, 
                  '\\[dia_semana\\]':d.diaSemana, '\\[cidade\\]':ev.cidade_nome, '\\[local\\]':ev.comum_nome, 
-                 '\\[local_detalhe\\]':ev.realizacao_nome, // ADICIONADO
-                 '\\[desc_data\\]':ev.desc_data, // ADICIONADO
-                 '\\[link\\]':ev.link_externo, // ADICIONADO
+                 '\\[local_detalhe\\]':ev.realizacao_nome, 
+                 '\\[desc_data\\]':ev.desc_data, 
+                 '\\[link\\]':ev.link_externo, 
                  '\\[observacoes\\]':ev.observacoes_extra 
              };
              for(const [k,v] of Object.entries(map)) txt = txt.replace(new RegExp(k,'gi'), v||'');
@@ -517,12 +517,30 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-logout').onclick=()=>auth.signOut();
     document.getElementById('toggle-password').onclick=()=>{const i=document.getElementById('login-password'); i.type=i.type==='password'?'text':'password';};
     document.getElementById('forgot-password').onclick=async()=>{const m=document.getElementById('login-email').value; if(!m)return; await auth.sendPasswordResetEmail(m); showToast("Enviado");};
-    navButtons.forEach(b => b.onclick = () => { navButtons.forEach(x=>x.classList.remove('ativa')); paginas.forEach(x=>x.classList.remove('ativa')); b.classList.add('ativa'); document.getElementById(b.id.replace('btnNav','pagina').replace('Config','Configuracoes')).classList.add('ativa'); if(b.id==='btnNavConfig') loadSettings('cidades'); if(b.id==='btnNavTemplates') renderTemplates(); });
+    
+    // NOVO: Navegação ajustada para os novos nomes sem "Módulo X:"
+    navButtons.forEach(b => b.onclick = () => { 
+        navButtons.forEach(x=>x.classList.remove('ativa')); 
+        paginas.forEach(x=>x.classList.remove('ativa')); 
+        b.classList.add('ativa'); 
+        
+        // Mapeia o ID do botão para o ID da página
+        const targetId = b.id.replace('btnNav','pagina');
+        
+        // Corrige o mapeamento de Config para Configuracoes
+        const paginaTarget = targetId.includes('Config') ? 'paginaConfiguracoes' : targetId;
+        
+        document.getElementById(paginaTarget).classList.add('ativa'); 
+        
+        if(b.id==='btnNavConfig') loadSettings('cidades'); 
+        if(b.id==='btnNavTemplates') renderTemplates(); 
+    });
+    
     const av=document.getElementById('profile-avatar-btn'), dr=document.getElementById('profile-dropdown');
     av.onclick=()=>dr.classList.toggle('show'); window.onclick=(e)=>{if(!av.contains(e.target)&&!dr.contains(e.target))dr.classList.remove('show')};
     document.getElementById('checkLinkExterno').addEventListener('change', (e) => document.getElementById('linkExternoWrapper').style.display = e.target.checked ? 'block' : 'none');
     
-    // --- REGISTRO PWA (NOVO) ---
+    // --- REGISTRO PWA ---
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/service-worker.js')
