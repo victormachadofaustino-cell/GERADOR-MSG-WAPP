@@ -22,7 +22,6 @@ const CONFIG = {
 };
 
 let currentSettingsTab = null;
-// MUDANÇA AQUI: Tornar variáveis mutáveis (let) para injeção
 let cidadesDB = []; 
 let titulosDB = []; 
 
@@ -46,7 +45,7 @@ export async function loadSettings(key) {
         const snap = await db.collection(cfg.col).get(); 
         DOM.settingsList.innerHTML = '';
         
-        if(snap.empty) { DOM.settingsList.innerHTML='<li style="padding:15px">Vazio.</li>'; return; }
+        if(snap.empty) { document.getElementById('btn-settings-add').style.display = 'inline-block'; DOM.settingsList.innerHTML='<li style="padding:15px">Vazio.</li>'; return; }
         
         let arr = []; snap.forEach(d=>arr.push({id:d.id,...d.data()}));
         arr.sort((a,b) => (a[cfg.f[0]] > b[cfg.f[0]]) ? 1 : -1);
@@ -54,6 +53,8 @@ export async function loadSettings(key) {
         // Atualiza cache interno se este for o módulo de origem
         if(key === 'cidades') cidadesDB = arr;
         if(key === 'titulos') titulosDB = arr;
+
+        document.getElementById('btn-settings-add').style.display = 'inline-block';
 
         arr.forEach(d => {
             let p = d.nome || d.grupo || d.sigla; 
@@ -68,14 +69,17 @@ export async function loadSettings(key) {
             if(key === 'titulos') s = d.titulo;
             
             const li = document.createElement('li'); li.className='config-list-item';
+            // Novo atributo para permitir seleção de texto
+            li.setAttribute('draggable', 'true'); 
+            
             li.innerHTML = `
                 <div class="config-item-text">
                     <span class="sigla">${p}</span>
                     ${s?`<span class="titulo">${s}</span>`:''}
                 </div>
                 <div class="config-item-actions">
-                    <button class="btn-edit btn-icon" data-id="${d.id}" data-key="${key}">✏️</button>
-                    <button class="btn-delete btn-icon" data-id="${d.id}" data-key="${key}">🗑️</button>
+                    <button class="btn-edit btn-icon secundario" data-id="${d.id}" data-key="${key}">✏️</button>
+                    <button class="btn-delete btn-icon perigo" data-id="${d.id}" data-key="${key}">🗑️</button>
                 </div>`;
             DOM.settingsList.appendChild(li);
         });
@@ -90,7 +94,6 @@ export async function loadSettings(key) {
 async function handleAdd(k) {
     if(k === 'comuns') {
         let opts = ''; 
-        // Usa o estado de cidades injetado (cidadesDB)
         if (cidadesDB.length === 0) return showToast("Carregue as cidades primeiro (navegue para Cidades).", true);
         
         cidadesDB.forEach(c => opts += `<option value="${c.id}">${c.nome}</option>`);
@@ -110,7 +113,7 @@ async function handleAdd(k) {
     } else if(k === 'titulos') {
          showConfigModal('Novo Título', c => c.innerHTML = `
             <div class="form-group"><label>Sigla</label><input id="f0"></div>
-            <div class="form-group"><label>Título</label><input id="f1"></div>`, 
+            <div class="form-group"><label>Título</label><textarea id="f1" rows="3"></textarea></div>`, // Ajustado para textarea
         async () => {
             try {
                 await db.collection(COLECOES.eventos_titulos).add({
@@ -168,7 +171,8 @@ async function handleEditDelete(b, k, id) {
         let h = `<div class="form-group"><label>Nome / Sigla / Grupo</label><input id="ed0" value="${d.nome||d.grupo||d.sigla}"></div>`;
         
         if(k === 'titulos') {
-            h += `<div class="form-group"><label>Titulo Extenso</label><input id="ed1" value="${d.titulo}"></div>`;
+            // AQUI: Usando textarea para maior conforto e rows=5 para aumentar o espaço
+            h += `<div class="form-group"><label>Titulo Extenso</label><textarea id="ed1" rows="5">${d.titulo}</textarea></div>`;
         }
         if(k === 'participantes') {
             h += `<div class="form-group"><label>Qtd Média</label><input id="ed1" type="number" value="${d.quantidade_media}"></div>`;
@@ -181,7 +185,6 @@ async function handleEditDelete(b, k, id) {
                 if(k === 'titulos') pl.titulo = document.getElementById('ed1').value;
                 if(k === 'participantes') pl.quantidade_media = document.getElementById('ed1').value;
                 
-                // Mantém a referência de cidade para comuns
                 if(k === 'comuns' && d.cidade_ref) pl.cidade_ref = d.cidade_ref;
 
                 await db.collection(CONFIG[k].col).doc(id).update(pl);
@@ -195,9 +198,7 @@ async function handleEditDelete(b, k, id) {
 
 
 // 6. INICIALIZAÇÃO DE LISTENERS DO MÓDULO
-// RECEBE A INJEÇÃO DE DADOS DO main.js
 export function initSettingsListeners(cidadesData, titulosData) {
-    // ATUALIZA O ESTADO GLOBAL INTERNO DO MÓDULO (cidadesDB, titulosDB)
     cidadesDB = cidadesData; 
     titulosDB = titulosData;
 
@@ -217,7 +218,7 @@ export function initSettingsListeners(cidadesData, titulosData) {
     // Listener: Botões Editar/Excluir na Lista
     DOM.settingsList.addEventListener('click', async (e) => {
         const b = e.target.closest('button'); 
-        if(!b) return;
+        if(!b) return; // Garante que só processa cliques em botões
         
         const k = b.dataset.key; 
         const id = b.dataset.id;

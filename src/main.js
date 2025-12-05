@@ -2,7 +2,7 @@
 
 // 1. IMPORTAÇÕES DE SERVIÇOS E ELEMENTOS
 import { auth, db, COLECOES } from './services/firebase-api.js'; 
-import { showToast, initModalListeners } from './services/helpers.js';
+import { showToast } from './services/helpers.js';
 import * as DOM from './modules/dom-elements.js'; 
 // Módulos Funcionais
 import { carregarDadosIniciais as initEventsData, initEventsListeners, renderizarLista } from './modules/events.js';
@@ -13,12 +13,12 @@ import { renderTemplates, initTemplatesListeners } from './modules/templates.js'
 
 // 2. VARIÁVEIS DE ESTADO GLOBAL (Centralizadas)
 let eventosDB = []; 
-let cidadesDB = []; 
+let cidadesDB = []; // ESTADO GLOBAL SERÁ INJETADO
 let comunsDB = [];
 let templatesDB = [];
 let participantesDB = [];
 let publicosAlvoDB = [];
-let titulosDB = []; 
+let titulosDB = []; // ESTADO GLOBAL SERÁ INJETADO
 let filtroAtual = 'todos'; 
 let currentUser = null;
 let currentSettingsTab = null;
@@ -27,6 +27,7 @@ let currentSettingsTab = null;
 // 3. FUNÇÕES DE SUPORTE: Carregamento Inicial de Dados
 async function carregarDadosIniciais() {
     
+    // Simplifica o carregamento de cache para o estado global
     const loadCache = async (col, arr) => { 
         const s=await db.collection(col).get(); arr.length=0; 
         s.forEach(d=>arr.push({id:d.id,...d.data()})); 
@@ -50,9 +51,6 @@ async function carregarDadosIniciais() {
 // 4. INICIALIZAÇÃO PRINCIPAL (DOMContentLoaded)
 document.addEventListener('DOMContentLoaded', () => {
     
-    // LIGAÇÃO CRÍTICA DOS LISTENERS DE MODAL (AGORA PROTEGIDA)
-    initModalListeners(); 
-    
     // 4.1 LISTENERS DE AUTENTICAÇÃO
     auth.onAuthStateChanged(u => {
         if (u) {
@@ -60,7 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.loginContainer.style.display = 'none';
             DOM.appContainer.style.display = 'block';
             DOM.userDisplay.textContent = u.email;
-            
             if (DOM.lastLoginDisplay) {
                 DOM.lastLoginDisplay.textContent = new Date(u.metadata.lastSignInTime).toLocaleDateString();
             }
@@ -75,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // LIGA LISTENERS DOS MÓDULOS E INJETA O ESTADO GLOBAL
             initEventsListeners(templatesDB);
             initGeneratorListeners(eventosDB, templatesDB); 
+            // INJEÇÃO AQUI: Passa as referências de Cidades e Títulos
             initSettingsListeners(cidadesDB, titulosDB); 
             initTemplatesListeners(); 
 

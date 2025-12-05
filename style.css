@@ -2,16 +2,16 @@
 html, body {
     overflow-x: hidden; 
     width: 100%;
-    /* Adicionado para layout de altura total */
     height: 100%; 
 }
 
 /* --- ESTILOS GERAIS --- */
 :root {
     --cor-primaria: #1A73E8; 
-    --cor-secundaria: #004d99;
-    --fundo-pagina: #f8f9fa;
-    --fundo-elemento: #ffffff;
+    --cor-secundaria: #004d99; 
+    --fundo-pagina: #f8f9fa; 
+    --fundo-elemento: #ffffff; 
+    --sombra-card: 0 4px 12px rgba(0,0,0,0.08); 
     --font-app: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
 }
 
@@ -22,9 +22,8 @@ body {
     color: #333; 
     margin: 0; 
     padding-bottom: 0; 
-    /* Adicionado para layout de altura total */
     min-height: 100vh;
-    display: flex; /* Necessário para alinhar o app-container */
+    display: flex; 
     flex-direction: column;
 }
 
@@ -36,22 +35,23 @@ body {
     display: flex; 
     justify-content: space-between; 
     align-items: center; 
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    position: sticky; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+    /* AJUSTE PARA CABEÇALHO FIXO E SCROLL (O scroll deve estar no main content) */
+    position: sticky; /* Mantemos sticky, mas garantimos que o container gerencia o scroll */
     top: 0;
     z-index: 50;
-    flex-shrink: 0; /* Impede o header de encolher */
+    flex-shrink: 0; 
 }
 .header h1 { margin: 0; font-size: 1.3em; font-weight: 600; }
 
-/* --- PERFIL --- */
+/* --- PERFIL --- (Ajuste de estilos) */
 .profile-menu { position: relative; }
 .profile-avatar {
-    background-color: rgba(255,255,255,0.2);
+    background-color: var(--cor-secundaria); 
     color: white;
     font-weight: bold;
     font-size: 14px;
-    border: 1px solid rgba(255,255,255,0.4);
+    border: none;
     border-radius: 50%;
     width: 35px;
     height: 35px;
@@ -60,15 +60,16 @@ body {
     align-items: center;
     cursor: pointer;
     transition: background-color 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
-.profile-avatar:hover { background-color: rgba(255,255,255,0.3); }
+.profile-avatar:hover { background-color: var(--cor-secundaria); }
 .profile-dropdown {
     position: absolute;
     top: 100%;
     right: 0;
     background-color: white;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border-radius: 5px;
+    box-shadow: var(--sombra-card);
+    border-radius: 8px; 
     margin-top: 10px;
     padding: 10px;
     z-index: 100;
@@ -99,7 +100,7 @@ body {
     background-color: #333;
     color: #fff;
     text-align: center;
-    border-radius: 2px;
+    border-radius: 4px;
     padding: 16px;
     position: fixed;
     z-index: 2000;
@@ -127,7 +128,7 @@ body {
     background-color: var(--fundo-elemento);
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     z-index: 40;
-    flex-shrink: 0; /* Impede a navegação de encolher */
+    flex-shrink: 0; 
 }
 #app-nav-bar button { 
     background: none; border: none; color: #555; 
@@ -139,6 +140,20 @@ body {
     justify-content: center;
     gap: 5px;
 }
+/* AJUSTE: Remove o label do botão de Configurações no rodapé */
+#btnNavConfig .label {
+    display: block; 
+}
+@media (max-width: 768px) {
+    #app-nav-bar button { 
+        padding: 5px 0;
+    }
+    #btnNavConfig .label {
+        /* Garante que o rótulo de Configurações seja ocultado em mobile/rodapé */
+        display: none; 
+    }
+}
+
 #app-nav-bar button .icon {
     font-size: 1.2em;
 }
@@ -155,7 +170,7 @@ body {
     margin: 0 auto;
     background-color: var(--fundo-pagina);
     min-height: 100vh;
-    flex-grow: 1; /* Permite que o container ocupe o espaço restante */
+    flex-grow: 1; 
     display: flex;
     flex-direction: column;
 }
@@ -164,14 +179,14 @@ body {
     padding: 20px;
     flex-wrap: wrap;
     gap: 20px;
-    flex-grow: 1; /* Permite que a página ocupe o espaço restante */
+    flex-grow: 1; 
     overflow-y: auto; 
 }
 .pagina.ativa {
     display: flex; 
     flex-direction: row; 
-    align-items: stretch; /* Estica as colunas para a altura total da página */
-    overflow-y: hidden; /* O scroll será delegado para as colunas internas */
+    align-items: stretch; 
+    overflow-y: hidden; 
 }
 #paginaGerador.ativa, #paginaGestao.ativa {
     display: flex;
@@ -182,11 +197,10 @@ body {
 .coluna {
     background-color: var(--fundo-elemento);
     padding: 25px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border-radius: 12px; 
+    box-shadow: var(--sombra-card); 
     flex: 1;
     min-width: 300px;
-    /* Ajustes para o layout sem scroll: */
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -195,7 +209,6 @@ body {
     flex: 2;
 }
 #paginaGerador #col-resultado {
-    /* Garante que a coluna resultado se estique */
     flex: 1.5;
 }
 
@@ -206,7 +219,7 @@ input[type="text"], input[type="email"], input[type="password"], input[type="dat
     width: 100%;
     padding: 10px;
     border: 1px solid #ccc;
-    border-radius: 4px;
+    border-radius: 8px; 
     box-sizing: border-box;
     font-size: 1em;
     font-family: var(--font-app);
@@ -238,7 +251,7 @@ input[readonly], textarea[readonly] {
 button {
     padding: 10px 15px;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px; 
     cursor: pointer;
     transition: background-color 0.2s, transform 0.1s;
     font-weight: 600;
@@ -257,24 +270,20 @@ button.btn-add { margin-bottom: 15px; }
 #resultado {
     background-color: #f4f4f4;
     padding: 15px;
-    border-radius: 4px;
+    border-radius: 8px;
     white-space: pre-wrap;
     word-wrap: break-word;
     font-size: 0.9em;
     border: 1px solid #ddd;
-    /* AJUSTE CRÍTICO: Ocupa o espaço restante e adiciona scroll interno */
     flex-grow: 1; 
     min-height: 150px;
     overflow-y: auto; 
-    margin-top: 15px; /* Espaço após o título "Resultado" */
+    margin-top: 15px; 
 }
-
-/* Garante que a tag PRE não tenha scroll duplo */
 #col-resultado > h2 {
     margin-bottom: 0;
 }
 #col-form form {
-    /* Permite que o formulário de Gerador role se for muito longo */
     overflow-y: auto;
     flex-grow: 1; 
 }
@@ -284,29 +293,36 @@ button.btn-add { margin-bottom: 15px; }
     list-style: none;
     padding: 0;
     margin: 0;
-    flex-grow: 1; /* Permite que a lista ocupe espaço restante */
-    overflow-y: auto; /* Scroll interno para a lista */
-    padding-right: 5px; /* Evita que o scrollbar toque a borda */
+    flex-grow: 1; 
+    overflow-y: auto; 
+    padding-right: 5px; 
 }
 .event-list-item, .config-list-item {
     background-color: white;
     padding: 15px;
-    border-radius: 6px;
+    border-radius: 10px; 
     margin-bottom: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: nowrap; 
-    flex-shrink: 0; /* Garante que os itens não encolham verticalmente */
+    flex-shrink: 0; 
 }
+.config-list-item:hover {
+    background-color: #f9f9f9;
+}
+
 .event-item-text, .config-item-text {
     flex: 1;
     min-width: 0; 
     padding: 0 10px;
+    /* Ajuste para melhor seleção de texto */
+    cursor: default; 
+    user-select: text; 
 }
 .event-item-text .sigla, .config-item-text .sigla {
-    font-weight: bold;
+    font-weight: 700; 
     font-size: 1.1em;
     display: block;
     white-space: nowrap; 
@@ -322,11 +338,16 @@ button.btn-add { margin-bottom: 15px; }
     display: flex;
     gap: 5px;
     flex-shrink: 0; 
+    /* AJUSTE PARA CABER NA TELA */
+    min-width: 100px;
 }
 .event-item-actions button, .config-list-item .config-item-actions button {
     padding: 6px;
     font-size: 0.8em;
-    border-radius: 4px;
+    border-radius: 6px;
+}
+.config-item-actions button.btn-icon {
+    padding: 8px; /* Aumenta o touch target */
 }
 
 /* --- LISTA DE EVENTOS (Específico) --- */
@@ -334,7 +355,7 @@ button.btn-add { margin-bottom: 15px; }
     background-color: var(--cor-primaria);
     color: white;
     padding: 5px 10px;
-    border-radius: 4px;
+    border-radius: 6px; 
     font-weight: 600;
     text-align: center;
     min-width: 60px;
@@ -362,6 +383,7 @@ button.btn-add { margin-bottom: 15px; }
     font-size: 0.9em;
     background-color: #f0f0f0;
     color: #333;
+    border-radius: 8px;
 }
 .filter-buttons button.ativa {
     background-color: var(--cor-primaria);
@@ -381,8 +403,8 @@ button.btn-add { margin-bottom: 15px; }
     width: 250px;
     background-color: var(--fundo-elemento);
     padding: 15px 0;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border-radius: 12px; 
+    box-shadow: var(--sombra-card);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
@@ -396,11 +418,12 @@ button.btn-add { margin-bottom: 15px; }
     border: none;
     border-left: 4px solid transparent;
     transition: all 0.2s;
+    font-weight: 600;
 }
 .settings-sidebar button.nav-btn.ativa {
     background-color: #e6f0ff;
     color: var(--cor-primaria);
-    font-weight: bold;
+    font-weight: 700;
     border-left-color: var(--cor-primaria);
 }
 .settings-sidebar button.nav-btn:hover {
@@ -423,7 +446,7 @@ button.btn-add { margin-bottom: 15px; }
 }
 
 
-/* --- MODAIS --- (Mantido sem alterações) */
+/* --- MODAIS --- */
 .modal-backdrop {
     position: fixed;
     top: 0;
@@ -440,8 +463,8 @@ button.btn-add { margin-bottom: 15px; }
     left: 50%;
     transform: translate(-50%, -50%);
     background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border-radius: 12px; 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     z-index: 1001;
     display: none;
     width: 90%;
@@ -467,7 +490,7 @@ button.btn-add { margin-bottom: 15px; }
     margin-left: 10px;
 }
 
-/* --- LOGIN --- (Mantido sem alterações) */
+/* --- LOGIN --- */
 .login-container {
     height: 100vh;
     display: flex;
@@ -478,7 +501,7 @@ button.btn-add { margin-bottom: 15px; }
 .login-form {
     background-color: white;
     padding: 30px;
-    border-radius: 10px;
+    border-radius: 12px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     width: 90%;
     max-width: 350px;
@@ -520,7 +543,7 @@ footer {
     font-size: 0.8em;
     color: #777;
     margin-top: 20px;
-    flex-shrink: 0; /* Impede o footer de encolher */
+    flex-shrink: 0; 
 }
 
 
@@ -530,13 +553,11 @@ footer {
         padding-bottom: 60px; 
     }
     .app-container {
-        /* Desativa o display:flex no body em mobile para evitar problemas de altura */
         display: block; 
         min-height: auto;
         flex-grow: 0;
     }
     .pagina.ativa {
-        /* Garante que o container da página não tente ocupar 100% da altura em mobile */
         display: flex; 
         flex-direction: column; 
         align-items: stretch;
@@ -572,14 +593,19 @@ footer {
     #app-nav-bar button .label {
         font-size: 0.75em;
     }
+    /* Oculta o label de Configurações no rodapé móvel */
+    #btnNavConfig .label {
+        display: none; 
+    }
 
     /* 2. Ajuste de Páginas */
     .pagina { padding: 10px; }
     .coluna { 
         padding: 15px; 
         min-width: 100%; 
-        height: auto; /* Permite que a altura seja automática no mobile */
+        height: auto; 
         flex-grow: 0;
+        border-radius: 10px; 
     }
     
     /* 3. Layout de Gerenciamento de Eventos (Empilha Form e Lista) */
@@ -591,7 +617,7 @@ footer {
 
     /* Ajuste do Gerador no Mobile */
     #resultado {
-        min-height: 100px; /* Reduz a altura mínima no mobile */
+        min-height: 100px; 
         flex-grow: 0;
         overflow-y: auto;
     }
@@ -604,23 +630,25 @@ footer {
     .event-list { 
         overflow-y: visible;
     }
-    .event-list-item { 
-        flex-direction: column; 
-        align-items: flex-start; 
-        gap: 10px;
+    .event-list-item, .config-list-item { 
+        flex-direction: row; /* Volta a ser row para tentar manter edição/exclusão na mesma linha */
+        flex-wrap: wrap;
+        align-items: center; 
+        gap: 5px;
+        padding: 10px;
     }
     .event-item-date {
-        margin-bottom: 5px;
+        margin-bottom: 0;
     }
-    .event-item-text {
-        padding: 0; 
-        width: 100%;
+    .event-item-text, .config-item-text {
+        padding: 0 5px; 
+        flex: 1 1 50%; /* Permite ocupar mais de 50% do espaço */
     }
-    .event-item-text .sigla {
+    .event-item-text .sigla, .config-item-text .sigla {
         white-space: normal; 
     }
-    .event-item-actions {
-        width: 100%;
+    .event-item-actions, .config-item-actions {
+        width: auto;
         justify-content: flex-end; 
     }
 

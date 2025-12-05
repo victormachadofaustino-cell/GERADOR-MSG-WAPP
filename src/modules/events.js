@@ -3,20 +3,17 @@
 // 1. IMPORTAÇÕES NECESSÁRIAS
 import { db, COLECOES } from '../services/firebase-api.js';
 import * as DOM from './dom-elements.js';
-// CORREÇÃO: Importa TODAS as funções auxiliares como "Helpers"
 import * as Helpers from '../services/helpers.js'; 
-// NOVO: Importa a função de gerar snippet do Módulo Gerador
 import { gerarSnippetBotao } from './generator.js'; 
 
 
-// 2. VARIÁVEIS DE ESTADO DO MÓDULO (Devem ser importadas do main, mas aqui estão como placeholders)
+// 2. VARIÁVEIS DE ESTADO DO MÓDULO 
 let eventosDB = []; 
 let cidadesDB = [];
 let participantesDB = [];
 let titulosDB = [];
 let publicosAlvoDB = [];
 let filtroAtual = 'todos';
-// NOVA VARIAVEL PARA GUARDAR A REFERENCIA DOS TEMPLATES
 let templatesRef = []; 
 
 
@@ -56,19 +53,11 @@ export async function carregarDadosIniciais() {
         loadSimples(COLECOES.realizacoes, 'select_realizacao', 'nome'),
     ]);
     
-    // Implementação de Checklists de Público-Alvo (Ausente no index.html fornecido, mas mantido)
-    // Se você deseja que os públicos-alvo sejam checklists, o HTML deve ser ajustado
-    // como visto no index.html, ele não tem checklist, mas sim um select para o Gerador.
-    // O código abaixo está aqui para o caso de você ter esquecido de enviar o HTML completo 
-    // ou se isso for uma refatoração futura.
-    // const chk = document.getElementById('checklist-publicos_alvo'); chk.innerHTML='';
-    // const sp = await db.collection(COLECOES.publicos_alvo).orderBy('nome').get();
-    // publicosAlvoDB.length = 0; 
-    // sp.forEach(d => {
-    //     publicosAlvoDB.push({id:d.id, ...d.data()});
-    //     const l=document.createElement('label'); l.innerHTML=`<input type="checkbox" class="chk-publico-alvo" value="${d.id}"> ${d.data().nome}`;
-    //     chk.appendChild(l);
-    // });
+    // Carregamento de Checklists (Públicos-Alvo)
+    // O código de checklist foi removido do HTML e será tratado via select no módulo events
+    const sp = await db.collection(COLECOES.publicos_alvo).orderBy('nome').get();
+    publicosAlvoDB.length = 0; 
+    sp.forEach(d => { publicosAlvoDB.push({id:d.id, ...d.data()}); });
 }
 
 
@@ -76,7 +65,6 @@ export async function carregarDadosIniciais() {
 export function renderizarLista(eventos) {
     eventosDB = eventos; 
     const cont=document.getElementById('listaEventos'); 
-    // const load=document.getElementById('statusLoading'); // Elemento 'statusLoading' não existe no HTML.
     cont.innerHTML='';
     let arr = eventos.sort((a,b)=>new Date(a.data_hora)-new Date(b.data_hora));
     
@@ -91,20 +79,25 @@ export function renderizarLista(eventos) {
     }
     
     arr.forEach(ev => {
-        const d = Helpers.formatarDataHora(ev.data_hora); // CORREÇÃO
+        const d = Helpers.formatarDataHora(ev.data_hora); 
         const isEnsaio = ev.tipo_evento_nome.toLowerCase().includes('ensaio');
         
-        // CORRIGIDO: Usando a estrutura de lista padrão (event-list-item) do seu CSS
+        // Uso da propriedade correta: d.mesCurto
+        const dataDisplay = `${d.dia} ${d.mesCurto || 'MÊS'}`; 
+        
+        const tit = ev.titulo_sigla || ev.titulo_nome;
+        const subTit = `${ev.cidade_nome || ev.comum_nome} - ${d.hora}`;
+        
         const li = document.createElement('li'); li.className='event-list-item';
         
         li.innerHTML = `
             <div class="event-item-date">
-                <span class="dia">${d.dia}</span>
-                <span class="mes">${d.mesCurto}</span>
+                <span class="dia">${d.dia || ''}</span>
+                <span class="mes">${d.mesCurto || ''}</span>
             </div>
             <div class="event-item-text">
-                <span class="sigla">${ev.titulo_sigla || (isEnsaio?'Ensaio':'Reunião')} ${ev.is_extraordinaria?'[EXTRA]':''}</span>
-                <span class="titulo">${ev.comum_nome} - ${d.hora}</span>
+                <span class="sigla">${tit} ${ev.is_extraordinaria?'[EXTRA]':''}</span>
+                <span class="titulo">${subTit}</span>
             </div>
             <div class="event-item-actions">
                 <button class="btn-lembrete secundario" data-id="${ev.id}">Lembrete</button>
@@ -125,7 +118,6 @@ export function initEventsListeners(templatesDB_ref) {
     
     // Listener: Mapeamento de Data/Hora (Novo UX)
     DOM.inpData.addEventListener('change', (e) => { 
-        // CORREÇÃO
         if(e.target.value) DOM.inpDescData.value = Helpers.calcularDescricaoData(new Date(e.target.value)); 
     });
 
@@ -133,15 +125,12 @@ export function initEventsListeners(templatesDB_ref) {
     DOM.selTipo.addEventListener('change', (e) => {
         const txt = e.target.options[e.target.selectedIndex]?.text || '';
         const isEnsaio = txt.toLowerCase().includes('ensaio');
-        // CORRIGIDO: allGroups agora é uma lista de elementos, e é percorrida
         DOM.allGroups.forEach(g => {
             if (g) g.style.display = isEnsaio ? 'none' : 'block';
         });
         
         if (isEnsaio) {
-            // Limpa campos que não se aplicam a ensaios
             DOM.selSigla.value=''; DOM.inpTitulo.value='Ensaio Regional'; DOM.selParticipantes.value=''; DOM.inpQtd.value='';
-            // CORREÇÃO: Checkbox e Textarea devem ser acessados diretamente.
             document.getElementById('is_extraordinaria').checked=false;
             document.getElementById('link_externo').value=''; 
             document.getElementById('observacoes_extra').value='';
@@ -203,11 +192,6 @@ export function initEventsListeners(templatesDB_ref) {
                 comum_ref: DOM.selComum.value, comum_nome: getTxt('select_comum'),
                 realizacao_ref: isEnsaio?'':document.getElementById('select_realizacao').value,
                 realizacao_nome: isEnsaio?'':getTxt('select_realizacao'),
-                // CORREÇÃO: Público Alvo não é mais um checklist no HTML fornecido, 
-                // mas usaremos o select_publico do gerador como público-alvo principal 
-                // para evitar quebrar a lógica de filtro de massa do generator.js.
-                // Se você deseja que os eventos tenham múltiplos públicos-alvo, o formulário HTML (events.html) 
-                // precisa ter múltiplos checkboxes/tags.
                 publicos_alvo_refs: [document.getElementById('select_publico').value].filter(Boolean)
             };
             
@@ -257,12 +241,14 @@ export function initEventsListeners(templatesDB_ref) {
             document.getElementById('is_extraordinaria').checked = ev.is_extraordinaria;
             document.getElementById('link_externo').value = ev.link_externo||'';
             document.getElementById('observacoes_extra').value = ev.observacoes_extra||'';
+            const checkLink = document.getElementById('checkLinkExterno');
+            const wrapperLink = document.getElementById('linkExternoWrapper');
             if(ev.link_externo) { 
-                document.getElementById('checkLinkExterno').checked=true; 
-                document.getElementById('linkExternoWrapper').style.display='block'; 
+                checkLink.checked=true; 
+                wrapperLink.style.display='block'; 
             } else {
-                 document.getElementById('checkLinkExterno').checked=false; 
-                 document.getElementById('linkExternoWrapper').style.display='none';
+                 checkLink.checked=false; 
+                 wrapperLink.style.display='none';
             }
             
             const tr = (eid,val) => { const el=document.getElementById(eid); el.value=val; el.dispatchEvent(new Event('change')); };
@@ -275,9 +261,6 @@ export function initEventsListeners(templatesDB_ref) {
                 if(ev.publico_qtd) DOM.inpQtd.value = ev.publico_qtd;
             }
             
-            // Lógica de pré-seleção do público alvo (Se fosse checklist)
-            // const refs = ev.publicos_alvo_refs||[]; 
-            // document.querySelectorAll('.chk-publico-alvo').forEach(c=>c.checked=refs.includes(c.value));
             document.getElementById('btnAdicionarEvento').innerText="Atualizar";
             document.getElementById('btnCancelarEdicao').style.display="inline-block";
             document.getElementById('btnNavGestao').click(); window.scrollTo(0,0); 
@@ -298,17 +281,15 @@ export function initEventsListeners(templatesDB_ref) {
         document.getElementById('eventoId').value=''; 
         document.getElementById('btnAdicionarEvento').innerText="Adicionar Novo Evento";
         document.getElementById('btnCancelarEdicao').style.display="none";
-        // CORRIGIDO: allGroups agora é percorrida
         DOM.allGroups.forEach(g => {
             if(g) g.style.display='block';
         });
         document.getElementById('linkExternoWrapper').style.display='none';
-        document.getElementById('checkLinkExterno').checked=false; // Limpa o checkbox
+        document.getElementById('checkLinkExterno').checked=false; 
     };
 
     // Listener: Filtros da Lista
     document.getElementById('filter-container').querySelectorAll('button').forEach(b => {
-        // CORRIGIDO: Adicionando o 'data-filtro' no elemento HTML
         if(b.id === 'filter-todos') b.dataset.filtro = 'todos';
         else if(b.id === 'filter-reunioes') b.dataset.filtro = 'reunioes';
         else if(b.id === 'filter-ensaios') b.dataset.filtro = 'ensaios';
