@@ -22,8 +22,9 @@ const CONFIG = {
 };
 
 let currentSettingsTab = null;
-let cidadesDB = []; // Será carregado e mantido aqui para referência cruzada
-let titulosDB = []; // Será carregado e mantido aqui para referência cruzada
+// MUDANÇA AQUI: Tornar variáveis mutáveis (let) para injeção
+let cidadesDB = []; 
+let titulosDB = []; 
 
 
 // 3. FUNÇÃO CORE: CARREGAR LISTAS DE CONFIGURAÇÃO (loadSettings)
@@ -34,7 +35,7 @@ export async function loadSettings(key) {
     currentSettingsTab = key;
 
     document.getElementById('settings-title').textContent = cfg.t;
-    document.getElementById('btn-settings-add').textContent = `+ Novo ${cfg.t.slice(0, -1)}`; // Remove o plural (ex: Cidades -> Cidade)
+    document.getElementById('btn-settings-add').textContent = `+ Novo ${cfg.t.slice(0, -1)}`; 
     
     document.querySelectorAll('.settings-sidebar .nav-btn').forEach(b=>b.classList.remove('ativa'));
     document.querySelector(`.settings-sidebar button[data-target="${key}"]`)?.classList.add('ativa');
@@ -50,7 +51,7 @@ export async function loadSettings(key) {
         let arr = []; snap.forEach(d=>arr.push({id:d.id,...d.data()}));
         arr.sort((a,b) => (a[cfg.f[0]] > b[cfg.f[0]]) ? 1 : -1);
         
-        // Atualiza cache interno para referências cruzadas
+        // Atualiza cache interno se este for o módulo de origem
         if(key === 'cidades') cidadesDB = arr;
         if(key === 'titulos') titulosDB = arr;
 
@@ -58,9 +59,10 @@ export async function loadSettings(key) {
             let p = d.nome || d.grupo || d.sigla; 
             let s = '';
             
+            // LÓGICA DE REFERÊNCIA CRUZADA
             if(key === 'comuns') { 
                 const c = cidadesDB.find(x => x.id === d.cidade_ref); 
-                s = c ? c.nome : '?'; 
+                s = c ? c.nome : 'Cidade não encontrada'; 
             }
             if(key === 'participantes') s = d.quantidade_media;
             if(key === 'titulos') s = d.titulo;
@@ -88,52 +90,58 @@ export async function loadSettings(key) {
 async function handleAdd(k) {
     if(k === 'comuns') {
         let opts = ''; 
-        // Precisa carregar as cidades antes de abrir o modal
-        if (cidadesDB.length === 0) {
-            await loadSettings('cidades');
-            if (cidadesDB.length === 0) return showToast("Carregue as cidades primeiro.", true);
-        }
+        // Usa o estado de cidades injetado (cidadesDB)
+        if (cidadesDB.length === 0) return showToast("Carregue as cidades primeiro (navegue para Cidades).", true);
+        
         cidadesDB.forEach(c => opts += `<option value="${c.id}">${c.nome}</option>`);
 
         showConfigModal('Nova Comum', c => c.innerHTML = `
             <div class="form-group"><label>Nome</label><input id="f0"></div>
             <div class="form-group"><label>Cidade</label><select id="f1">${opts}</select></div>`, 
         async () => {
-            await db.collection(COLECOES.comuns).add({
-                nome: document.getElementById('f0').value, 
-                cidade_ref: document.getElementById('f1').value
-            });
-            showToast("Salvo"); hideConfigModal(); loadSettings(k);
+            try {
+                await db.collection(COLECOES.comuns).add({
+                    nome: document.getElementById('f0').value, 
+                    cidade_ref: document.getElementById('f1').value
+                });
+                showToast("Comum Salva!"); hideConfigModal(); loadSettings(k);
+            } catch (e) { showToast("Erro ao adicionar: " + e.message, true); }
         });
     } else if(k === 'titulos') {
          showConfigModal('Novo Título', c => c.innerHTML = `
             <div class="form-group"><label>Sigla</label><input id="f0"></div>
             <div class="form-group"><label>Título</label><input id="f1"></div>`, 
         async () => {
-            await db.collection(COLECOES.eventos_titulos).add({
-                sigla: document.getElementById('f0').value, 
-                titulo: document.getElementById('f1').value
-            });
-            showToast("Salvo"); hideConfigModal(); loadSettings(k);
+            try {
+                await db.collection(COLECOES.eventos_titulos).add({
+                    sigla: document.getElementById('f0').value, 
+                    titulo: document.getElementById('f1').value
+                });
+                showToast("Título Salvo!"); hideConfigModal(); loadSettings(k);
+            } catch (e) { showToast("Erro ao adicionar: " + e.message, true); }
         });
     } else if(k === 'participantes') {
         showConfigModal('Novo Grupo', c => c.innerHTML = `
             <div class="form-group"><label>Grupo</label><input id="f0"></div>
             <div class="form-group"><label>Qtd Média</label><input id="f1" type="number"></div>`, 
         async () => {
-            await db.collection(COLECOES.participantes).add({
-                grupo: document.getElementById('f0').value, 
-                quantidade_media: document.getElementById('f1').value
-            });
-            showToast("Salvo"); hideConfigModal(); loadSettings(k);
+            try {
+                await db.collection(COLECOES.participantes).add({
+                    grupo: document.getElementById('f0').value, 
+                    quantidade_media: document.getElementById('f1').value
+                });
+                showToast("Grupo Salvo!"); hideConfigModal(); loadSettings(k);
+            } catch (e) { showToast("Erro ao adicionar: " + e.message, true); }
         });
     } else {
          showConfigModal('Novo Item', c => c.innerHTML = `<div class="form-group"><label>Nome</label><input id="f0"></div>`, 
         async () => {
-            await db.collection(CONFIG[k].col).add({
-                nome: document.getElementById('f0').value
-            });
-            showToast("Salvo"); hideConfigModal(); loadSettings(k);
+            try {
+                await db.collection(CONFIG[k].col).add({
+                    nome: document.getElementById('f0').value
+                });
+                showToast("Item Salvo!"); hideConfigModal(); loadSettings(k);
+            } catch (e) { showToast("Erro ao adicionar: " + e.message, true); }
         });
     }
 }
@@ -143,10 +151,12 @@ async function handleAdd(k) {
 async function handleEditDelete(b, k, id) {
     if(b.classList.contains('btn-delete')) {
         showDeleteModal("Item", async () => { 
-            await db.collection(CONFIG[k].col).doc(id).delete(); 
-            showToast("Excluído"); 
-            hideDeleteModal(); 
-            loadSettings(k); 
+            try {
+                await db.collection(CONFIG[k].col).doc(id).delete(); 
+                showToast("Excluído com sucesso!"); 
+                hideDeleteModal(); 
+                loadSettings(k); 
+            } catch (e) { showToast("Erro ao excluir: " + e.message, true); }
         });
     }
     
@@ -165,24 +175,32 @@ async function handleEditDelete(b, k, id) {
         }
         
         showConfigModal(`Editar ${k}`, c => c.innerHTML = h, async () => {
-            let pl = { [d.nome?'nome':(d.grupo?'grupo':'sigla')]: document.getElementById('ed0').value };
-            
-            if(k === 'titulos') pl.titulo = document.getElementById('ed1').value;
-            if(k === 'participantes') pl.quantidade_media = document.getElementById('ed1').value;
-            
-            // Tratamento especial para Comuns (se a cidade_ref for editada, mas não está no modal simples)
-            if(k === 'comuns' && d.cidade_ref) pl.cidade_ref = d.cidade_ref;
+            try {
+                let pl = { [d.nome?'nome':(d.grupo?'grupo':'sigla')]: document.getElementById('ed0').value };
+                
+                if(k === 'titulos') pl.titulo = document.getElementById('ed1').value;
+                if(k === 'participantes') pl.quantidade_media = document.getElementById('ed1').value;
+                
+                // Mantém a referência de cidade para comuns
+                if(k === 'comuns' && d.cidade_ref) pl.cidade_ref = d.cidade_ref;
 
-            await db.collection(CONFIG[k].col).doc(id).update(pl);
-            showToast("Atualizado"); hideConfigModal(); loadSettings(k);
+                await db.collection(CONFIG[k].col).doc(id).update(pl);
+                showToast("Atualizado com sucesso!"); 
+                hideConfigModal(); 
+                loadSettings(k);
+            } catch (e) { showToast("Erro ao atualizar: " + e.message, true); }
         });
     }
 }
 
 
 // 6. INICIALIZAÇÃO DE LISTENERS DO MÓDULO
-export function initSettingsListeners() {
-    
+// RECEBE A INJEÇÃO DE DADOS DO main.js
+export function initSettingsListeners(cidadesData, titulosData) {
+    // ATUALIZA O ESTADO GLOBAL INTERNO DO MÓDULO (cidadesDB, titulosDB)
+    cidadesDB = cidadesData; 
+    titulosDB = titulosData;
+
     // Listener: Sidebar Clicks (Mudar de categoria)
     document.querySelector('.settings-sidebar').addEventListener('click', e => { 
         const b = e.target.closest('.nav-btn'); 
@@ -206,10 +224,4 @@ export function initSettingsListeners() {
         
         handleEditDelete(b, k, id);
     });
-
-    // Inicia carregando a primeira lista ao entrar na página de Configurações
-    // NOTA: Esta chamada deve ser feita no main.js quando a navegação para Configurações ocorrer.
-    
-    // Carrega dados iniciais necessários (como Cidades) para que os modais funcionem
-    // loadSettings('cidades'); 
 }

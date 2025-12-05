@@ -3,13 +3,8 @@
 // 1. IMPORTAÇÕES NECESSÁRIAS
 import { db, COLECOES } from '../services/firebase-api.js';
 import * as DOM from './dom-elements.js';
-import { 
-    showToast, 
-    calcularDescricaoData, 
-    formatarDataHora,
-    showDeleteModal,
-    hideDeleteModal
-} from '../services/helpers.js';
+// CORREÇÃO: Importa TODAS as funções auxiliares como "Helpers"
+import * as Helpers from '../services/helpers.js'; 
 // NOVO: Importa a função de gerar snippet do Módulo Gerador
 import { gerarSnippetBotao } from './generator.js'; 
 
@@ -61,15 +56,19 @@ export async function carregarDadosIniciais() {
         loadSimples(COLECOES.realizacoes, 'select_realizacao', 'nome'),
     ]);
     
-    // Carregamento de Checklists (Públicos-Alvo)
-    const chk = document.getElementById('checklist-publicos_alvo'); chk.innerHTML='';
-    const sp = await db.collection(COLECOES.publicos_alvo).orderBy('nome').get();
-    publicosAlvoDB.length = 0; 
-    sp.forEach(d => {
-        publicosAlvoDB.push({id:d.id, ...d.data()});
-        const l=document.createElement('label'); l.innerHTML=`<input type="checkbox" class="chk-publico-alvo" value="${d.id}"> ${d.data().nome}`;
-        chk.appendChild(l);
-    });
+    // Implementação de Checklists de Público-Alvo (Ausente no index.html fornecido, mas mantido)
+    // Se você deseja que os públicos-alvo sejam checklists, o HTML deve ser ajustado
+    // como visto no index.html, ele não tem checklist, mas sim um select para o Gerador.
+    // O código abaixo está aqui para o caso de você ter esquecido de enviar o HTML completo 
+    // ou se isso for uma refatoração futura.
+    // const chk = document.getElementById('checklist-publicos_alvo'); chk.innerHTML='';
+    // const sp = await db.collection(COLECOES.publicos_alvo).orderBy('nome').get();
+    // publicosAlvoDB.length = 0; 
+    // sp.forEach(d => {
+    //     publicosAlvoDB.push({id:d.id, ...d.data()});
+    //     const l=document.createElement('label'); l.innerHTML=`<input type="checkbox" class="chk-publico-alvo" value="${d.id}"> ${d.data().nome}`;
+    //     chk.appendChild(l);
+    // });
 }
 
 
@@ -77,7 +76,7 @@ export async function carregarDadosIniciais() {
 export function renderizarLista(eventos) {
     eventosDB = eventos; 
     const cont=document.getElementById('listaEventos'); 
-    const load=document.getElementById('statusLoading');
+    // const load=document.getElementById('statusLoading'); // Elemento 'statusLoading' não existe no HTML.
     cont.innerHTML='';
     let arr = eventos.sort((a,b)=>new Date(a.data_hora)-new Date(b.data_hora));
     
@@ -86,38 +85,35 @@ export function renderizarLista(eventos) {
     else if(filtroAtual==='reunioes') arr=arr.filter(e=>!e.tipo_evento_nome.toLowerCase().includes('ensaio') && !e.is_extraordinaria);
     else if(filtroAtual==='extras') arr=arr.filter(e=>e.is_extraordinaria);
     
-    if(arr.length===0) { load.style.display='block'; load.textContent='Nenhum evento encontrado.'; return; }
-    load.style.display='none';
+    if(arr.length===0) { 
+        cont.innerHTML='<li>Nenhum evento encontrado.</li>'; 
+        return; 
+    }
     
     arr.forEach(ev => {
-        const d = formatarDataHora(ev.data_hora);
+        const d = Helpers.formatarDataHora(ev.data_hora); // CORREÇÃO
         const isEnsaio = ev.tipo_evento_nome.toLowerCase().includes('ensaio');
         
-        const infoSecundaria = `<span>${d.diaSemana}, ${d.data} &middot; ${d.hora} &middot; ${ev.cidade_nome}</span>`;
-        const tit = isEnsaio ? `🎵 Ensaio` : `👔 ${ev.titulo_sigla || ev.titulo_nome}`;
+        // CORRIGIDO: Usando a estrutura de lista padrão (event-list-item) do seu CSS
+        const li = document.createElement('li'); li.className='event-list-item';
         
-        const div = document.createElement('div'); div.className='evento-card';
-        div.innerHTML = `
-            <div class="evento-header">
-                <h3>${tit} ${ev.is_extraordinaria?'<span class="tag-extra">[EXTRA]</span>':''}</h3>
-                ${infoSecundaria}
-                <span class="expand-icon">+</span>
+        li.innerHTML = `
+            <div class="event-item-date">
+                <span class="dia">${d.dia}</span>
+                <span class="mes">${d.mesCurto}</span>
             </div>
-            <div class="evento-detalhes" style="display:none">
-                <p><strong>Data:</strong> ${d.dataExtenso}</p>
-                <p><strong>Local:</strong> ${ev.comum_nome}</p>
-                <div class="evento-botoes-detalhe">
-                    <button class="btn-lembrete" data-id="${ev.id}">Lembrete</button>
-                    <button class="btn-convite" data-id="${ev.id}">Convite</button>
-                    <button class="btn-edit btn-icon" data-id="${ev.id}">✏️</button>
-                    <button class="btn-delete btn-icon" data-id="${ev.id}">🗑️</button>
-                </div>
+            <div class="event-item-text">
+                <span class="sigla">${ev.titulo_sigla || (isEnsaio?'Ensaio':'Reunião')} ${ev.is_extraordinaria?'[EXTRA]':''}</span>
+                <span class="titulo">${ev.comum_nome} - ${d.hora}</span>
+            </div>
+            <div class="event-item-actions">
+                <button class="btn-lembrete secundario" data-id="${ev.id}">Lembrete</button>
+                <button class="btn-convite secundario" data-id="${ev.id}">Convite</button>
+                <button class="btn-edit btn-icon secundario" data-id="${ev.id}">✏️</button>
+                <button class="btn-delete btn-icon perigo" data-id="${ev.id}">🗑️</button>
             </div>`;
-        div.querySelector('.evento-header').onclick=()=>{
-            const b=div.querySelector('.evento-detalhes'); 
-            b.style.display=b.style.display==='block'?'none':'block';
-        };
-        cont.appendChild(div);
+            
+        cont.appendChild(li);
     });
 }
 
@@ -129,18 +125,26 @@ export function initEventsListeners(templatesDB_ref) {
     
     // Listener: Mapeamento de Data/Hora (Novo UX)
     DOM.inpData.addEventListener('change', (e) => { 
-        if(e.target.value) DOM.inpDescData.value = calcularDescricaoData(new Date(e.target.value)); 
+        // CORREÇÃO
+        if(e.target.value) DOM.inpDescData.value = Helpers.calcularDescricaoData(new Date(e.target.value)); 
     });
 
     // Listener: Tipo de Evento (Oculta/Exibe campos para Ensaio)
     DOM.selTipo.addEventListener('change', (e) => {
         const txt = e.target.options[e.target.selectedIndex]?.text || '';
         const isEnsaio = txt.toLowerCase().includes('ensaio');
-        DOM.allGroups.forEach(g => g.style.display = isEnsaio ? 'none' : 'block');
+        // CORRIGIDO: allGroups agora é uma lista de elementos, e é percorrida
+        DOM.allGroups.forEach(g => {
+            if (g) g.style.display = isEnsaio ? 'none' : 'block';
+        });
+        
         if (isEnsaio) {
+            // Limpa campos que não se aplicam a ensaios
             DOM.selSigla.value=''; DOM.inpTitulo.value='Ensaio Regional'; DOM.selParticipantes.value=''; DOM.inpQtd.value='';
+            // CORREÇÃO: Checkbox e Textarea devem ser acessados diretamente.
             document.getElementById('is_extraordinaria').checked=false;
-            document.getElementById('link_externo').value=''; DOM.observacoes_extra.value='';
+            document.getElementById('link_externo').value=''; 
+            document.getElementById('observacoes_extra').value='';
             document.getElementById('select_realizacao').value='';
             document.getElementById('checkLinkExterno').checked=false;
             document.getElementById('linkExternoWrapper').style.display='none';
@@ -172,7 +176,7 @@ export function initEventsListeners(templatesDB_ref) {
             let arr = []; snap.forEach(d => arr.push({id:d.id, ...d.data()}));
             arr.sort((a,b)=>a.nome.localeCompare(b.nome));
             arr.forEach(c => DOM.selComum.add(new Option(c.nome, c.id)));
-        } catch(err) { showToast("Erro ao buscar comuns", true); } 
+        } catch(err) { Helpers.showToast("Erro ao buscar comuns", true); } 
         finally { DOM.selComum.disabled = false; }
     });
     
@@ -199,8 +203,14 @@ export function initEventsListeners(templatesDB_ref) {
                 comum_ref: DOM.selComum.value, comum_nome: getTxt('select_comum'),
                 realizacao_ref: isEnsaio?'':document.getElementById('select_realizacao').value,
                 realizacao_nome: isEnsaio?'':getTxt('select_realizacao'),
-                publicos_alvo_refs: Array.from(document.querySelectorAll('.chk-publico-alvo:checked')).map(c=>c.value)
+                // CORREÇÃO: Público Alvo não é mais um checklist no HTML fornecido, 
+                // mas usaremos o select_publico do gerador como público-alvo principal 
+                // para evitar quebrar a lógica de filtro de massa do generator.js.
+                // Se você deseja que os eventos tenham múltiplos públicos-alvo, o formulário HTML (events.html) 
+                // precisa ter múltiplos checkboxes/tags.
+                publicos_alvo_refs: [document.getElementById('select_publico').value].filter(Boolean)
             };
+            
             if (!isEnsaio) {
                 data.titulo_ref=DOM.selSigla.value; data.titulo_sigla=getTxt('select_titulo'); data.titulo_nome=DOM.inpTitulo.value;
                 data.publico_ref=DOM.selParticipantes.value; data.publico_grupo=getTxt('select_participantes'); data.publico_qtd=DOM.inpQtd.value;
@@ -213,9 +223,9 @@ export function initEventsListeners(templatesDB_ref) {
             if(id) await db.collection(COLECOES.eventos).doc(id).update(data);
             else await db.collection(COLECOES.eventos).add(data);
             
-            showToast("Salvo!"); 
+            Helpers.showToast("Salvo!"); 
             document.getElementById('btnCancelarEdicao').click();
-        } catch (err) { showToast("Erro: "+err.message, true); }
+        } catch (err) { Helpers.showToast("Erro: "+err.message, true); }
         finally { btn.disabled=false; btn.innerText="Adicionar Novo Evento"; }
     });
     
@@ -226,10 +236,12 @@ export function initEventsListeners(templatesDB_ref) {
         const ev = eventosDB.find(x=>x.id===id);
         
         if(btn.classList.contains('btn-delete')) {
-            showDeleteModal("Evento", async()=>{ 
-                await db.collection(COLECOES.eventos).doc(id).delete(); 
-                showToast("Apagado"); 
-                hideDeleteModal(); 
+            Helpers.showDeleteModal("Evento", async()=>{ 
+                try {
+                    await db.collection(COLECOES.eventos).doc(id).delete(); 
+                    Helpers.showToast("Apagado"); 
+                    Helpers.hideDeleteModal(); 
+                } catch (err) { Helpers.showToast("Erro ao apagar: " + err.message, true); }
             });
         }
         
@@ -248,6 +260,9 @@ export function initEventsListeners(templatesDB_ref) {
             if(ev.link_externo) { 
                 document.getElementById('checkLinkExterno').checked=true; 
                 document.getElementById('linkExternoWrapper').style.display='block'; 
+            } else {
+                 document.getElementById('checkLinkExterno').checked=false; 
+                 document.getElementById('linkExternoWrapper').style.display='none';
             }
             
             const tr = (eid,val) => { const el=document.getElementById(eid); el.value=val; el.dispatchEvent(new Event('change')); };
@@ -260,8 +275,9 @@ export function initEventsListeners(templatesDB_ref) {
                 if(ev.publico_qtd) DOM.inpQtd.value = ev.publico_qtd;
             }
             
-            const refs = ev.publicos_alvo_refs||[]; 
-            document.querySelectorAll('.chk-publico-alvo').forEach(c=>c.checked=refs.includes(c.value));
+            // Lógica de pré-seleção do público alvo (Se fosse checklist)
+            // const refs = ev.publicos_alvo_refs||[]; 
+            // document.querySelectorAll('.chk-publico-alvo').forEach(c=>c.checked=refs.includes(c.value));
             document.getElementById('btnAdicionarEvento').innerText="Atualizar";
             document.getElementById('btnCancelarEdicao').style.display="inline-block";
             document.getElementById('btnNavGestao').click(); window.scrollTo(0,0); 
@@ -282,15 +298,27 @@ export function initEventsListeners(templatesDB_ref) {
         document.getElementById('eventoId').value=''; 
         document.getElementById('btnAdicionarEvento').innerText="Adicionar Novo Evento";
         document.getElementById('btnCancelarEdicao').style.display="none";
-        DOM.allGroups.forEach(g => g.style.display='block');
+        // CORRIGIDO: allGroups agora é percorrida
+        DOM.allGroups.forEach(g => {
+            if(g) g.style.display='block';
+        });
         document.getElementById('linkExternoWrapper').style.display='none';
+        document.getElementById('checkLinkExterno').checked=false; // Limpa o checkbox
     };
 
     // Listener: Filtros da Lista
-    document.getElementById('filter-container').querySelectorAll('button').forEach(b => b.onclick = () => {
-        document.querySelector('.filter-buttons .ativa').classList.remove('ativa'); 
-        b.classList.add('ativa');
-        filtroAtual = b.dataset.filtro; 
-        renderizarLista(eventosDB);
+    document.getElementById('filter-container').querySelectorAll('button').forEach(b => {
+        // CORRIGIDO: Adicionando o 'data-filtro' no elemento HTML
+        if(b.id === 'filter-todos') b.dataset.filtro = 'todos';
+        else if(b.id === 'filter-reunioes') b.dataset.filtro = 'reunioes';
+        else if(b.id === 'filter-ensaios') b.dataset.filtro = 'ensaios';
+        else if(b.id === 'filter-extra') b.dataset.filtro = 'extras';
+
+        b.onclick = () => {
+            document.querySelector('.filter-buttons .ativa').classList.remove('ativa'); 
+            b.classList.add('ativa');
+            filtroAtual = b.dataset.filtro; 
+            renderizarLista(eventosDB);
+        };
     });
 }

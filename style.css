@@ -2,6 +2,8 @@
 html, body {
     overflow-x: hidden; 
     width: 100%;
+    /* Adicionado para layout de altura total */
+    height: 100%; 
 }
 
 /* --- ESTILOS GERAIS --- */
@@ -19,7 +21,11 @@ body {
     background-color: var(--fundo-pagina); 
     color: #333; 
     margin: 0; 
-    padding-bottom: 40px;
+    padding-bottom: 0; 
+    /* Adicionado para layout de altura total */
+    min-height: 100vh;
+    display: flex; /* Necessário para alinhar o app-container */
+    flex-direction: column;
 }
 
 /* --- HEADER --- */
@@ -31,8 +37,12 @@ body {
     justify-content: space-between; 
     align-items: center; 
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: sticky; 
+    top: 0;
+    z-index: 50;
+    flex-shrink: 0; /* Impede o header de encolher */
 }
-.header h1 { margin: 0; font-size: 1.5em; font-weight: 600; } 
+.header h1 { margin: 0; font-size: 1.3em; font-weight: 600; }
 
 /* --- PERFIL --- */
 .profile-menu { position: relative; }
@@ -45,361 +55,497 @@ body {
     border-radius: 50%;
     width: 35px;
     height: 35px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     cursor: pointer;
-    padding: 0;
-    display: flex; align-items: center; justify-content: center;
+    transition: background-color 0.2s;
 }
+.profile-avatar:hover { background-color: rgba(255,255,255,0.3); }
 .profile-dropdown {
-    display: none; position: absolute; right: 0; top: 45px;
-    background-color: var(--fundo-elemento); 
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 5px;
+    margin-top: 10px;
+    padding: 10px;
+    z-index: 100;
+    min-width: 200px;
+    display: none;
+    text-align: left;
     color: #333;
-    border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-    width: 260px; z-index: 100; border: 1px solid #eee; overflow: hidden;
 }
 .profile-dropdown.show { display: block; }
-.profile-dropdown .profile-email,
-.profile-dropdown .profile-last-login { 
-    padding: 10px 15px; 
-    background: #f8f9fa; 
-    border-bottom: 1px solid #eee; 
-    font-size: 0.85em; 
-    color: #666; 
-    line-height: 1.3;
+.profile-dropdown p { margin: 5px 0; font-size: 0.9em; }
+.profile-dropdown .small { font-size: 0.75em; color: #777; }
+.profile-dropdown button {
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
 }
-.profile-dropdown .profile-email span,
-.profile-dropdown .profile-last-login span { 
-    display: block; font-weight: bold; color: #333; font-size: 1.0em; margin-top: 2px; 
-}
-.profile-dropdown .profile-last-login {
-    border-top: 1px solid #eee; 
-    border-bottom: none;
-}
-.profile-dropdown a { display: block; padding: 12px 15px; text-decoration: none; color: var(--cor-primaria); font-size: 0.95em; transition: background 0.2s; }
-.profile-dropdown a:hover { background-color: #f1f3f5; }
-.profile-dropdown a#btn-logout { color: #dc3545; border-top: 1px solid #eee; }
 
-/* --- NAVEGAÇÃO (Menu de Módulos) --- */
-/* Estilo Padrão (Usado no Mobile Footer e Desktop) */
-nav { 
-    background-color: var(--fundo-elemento); 
+
+/* --- TOAST NOTIFICATION --- */
+#toast-notification {
+    visibility: hidden;
+    min-width: 250px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 2px;
+    padding: 16px;
+    position: fixed;
+    z-index: 2000;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 30px;
+    font-size: 17px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: visibility 0s, opacity 0.5s linear;
+}
+#toast-notification.show {
+    visibility: visible;
+    opacity: 1;
+}
+#toast-notification.error {
+    background-color: #dc3545;
+}
+
+
+/* --- NAVEGAÇÃO PRINCIPAL (app-nav-bar) --- */
+#app-nav-bar { 
     display: flex; 
     justify-content: space-around; 
-    border-top: 1px solid #ddd;
-    box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-    position: sticky; top: 0; z-index: 90;
+    background-color: var(--fundo-elemento);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    z-index: 40;
+    flex-shrink: 0; /* Impede a navegação de encolher */
 }
-nav button { 
+#app-nav-bar button { 
     background: none; border: none; color: #555; 
     padding: 10px 5px; cursor: pointer; font-size: 13px; font-weight: 500;
     border-bottom: 3px solid transparent; transition: all 0.3s;
-    display: flex; flex-direction: column; align-items: center; 
+    display: flex; flex-direction: row; align-items: center; 
     line-height: 1.2;
-}
-nav button .icon {
-    font-size: 1.4em;
-    margin-bottom: 3px;
-}
-nav button .label {
-    font-size: 0.8em;
-}
-nav button:hover { color: var(--cor-primaria); background-color: #f8f9fa; }
-nav button.ativa { color: var(--cor-primaria); border-bottom-color: var(--cor-primaria); background-color: #f1f8ff; }
-
-/* Esconde a nova barra inferior por padrão (será mostrada no media query) */
-.mobile-nav-footer {
-    display: none; 
-}
-
-/* --- LAYOUT PAGINAS --- */
-.pagina { display: none; padding: 20px; max-width: 1200px; margin: 0 auto; }
-.pagina.ativa { display: block; animation: fadeIn 0.3s ease; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-#paginaGestao.ativa { display: flex; flex-wrap: wrap; gap: 20px; }
-.coluna { flex: 1; min-width: 320px; padding: 25px; background: var(--fundo-elemento); border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eee; }
-
-/* --- FORMULARIOS --- */
-h2 { border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; color: var(--cor-primaria); margin-top: 0; font-size: 1.4em; }
-
-/* --- NOVO: SEPARAR DATA/HORA PARA MELHOR UX --- */
-.form-group-date-time-split {
-    display: flex;
-    gap: 15px;
-    margin-top: 15px;
-}
-.form-group-date-time-split .form-group {
-    flex: 1;
-}
-.form-group-date-time-split .form-group label {
-    margin-top: 0; 
-}
-
-/* --- FIELDSET MELHORADO (UX) --- */
-.form-section {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 20px;
-    background-color: #fcfcfc;
-}
-.form-section legend {
-    font-size: 1.1em;
-    font-weight: 700;
-    color: var(--cor-primaria);
-    padding: 0 10px;
-    margin-left: -5px;
-}
-
-label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.9em; color: #444; }
-input[type="text"], input[type="email"], input[type="password"], input[type="datetime-local"], input[type="month"], input[type="date"], input[type="time"], textarea, select {
-    width: 100%; padding: 10px; margin-top: 5px; 
-    border: 1px solid #ccc; border-radius: 6px; 
-    box-sizing: border-box; font-size: 15px;
-    transition: border-color 0.3s;
-}
-input:focus, select:focus, textarea:focus { border-color: var(--cor-primaria); outline: none; }
-
-/* --- BOTOES GERAIS --- */
-button { 
-    background-color: var(--cor-primaria); 
-    color: white; 
-    padding: 10px 15px; border: none; border-radius: 6px; 
-    cursor: pointer; font-size: 15px; font-weight: 500;
-    transition: background 0.2s, transform 0.1s;
-    min-height: 44px;
-}
-button:active { transform: scale(0.98); }
-button:hover { background-color: var(--cor-secundaria); }
-button.secundario { background-color: #6c757d; }
-button.btn-add { background-color: #28a745; font-size: 13px; padding: 6px 12px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; min-height: 35px; }
-button.btn-danger { background-color: #dc3545; }
-button:disabled { background-color: #ccc; cursor: not-allowed; }
-#btnAdicionarEvento { background-color: #28a745; width: 100%; margin-top: 20px; padding: 12px; font-size: 16px; }
-#linkExternoWrapper { display: none; padding: 10px; background: #f8f9fa; border-radius: 6px; margin-top: 5px; border: 1px dashed #ccc; }
-
-/* --- LISTA DE EVENTOS --- */
-.filter-buttons { margin-bottom: 15px; display: flex; gap: 5px; flex-wrap: wrap; }
-.filter-buttons button { background-color: var(--fundo-elemento); color: #555; border: 1px solid #ddd; padding: 6px 12px; font-size: 13px; border-radius: 20px; }
-.filter-buttons button.ativa { background-color: var(--cor-primaria); color: white; border-color: var(--cor-primaria); }
-
-#listaEventos { max-height: 750px; overflow-y: auto; padding-right: 5px; }
-.evento-card { 
-    border: 1px solid #eee; background: var(--fundo-elemento); 
-    border-radius: 8px; margin-bottom: 12px; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
-    transition: transform 0.2s;
-}
-.evento-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
-.evento-header { 
-    padding: 12px 15px; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: flex-start;
-    cursor: pointer; 
-    background: #fcfcfc; 
-    border-bottom: 1px solid #f0f0f0; 
-    border-radius: 8px 8px 0 0; 
-    font-size: 0.95em; 
-    color: #555;
-    position: relative;
-}
-.evento-header h3 { margin: 0 0 5px 0; font-size: 1.1em; font-weight: 600; color: #333; }
-.evento-header span { font-size: 0.8em; color: #777; } 
-.evento-header .expand-icon { 
-    position: absolute; 
-    right: 15px; 
-    top: 15px;
-}
-.tag-extra { font-size: 0.75em; background: #ffebee; color: #c62828; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-left: 5px; display: inline-block; }
-
-.evento-detalhes { padding: 15px; background: var(--fundo-elemento); display: none; border-radius: 0 0 8px 8px; }
-.evento-detalhes p { margin: 5px 0; font-size: 0.95em; color: #555; }
-.evento-botoes-detalhe { margin-top: 15px; border-top: 1px solid #eee; padding-top: 12px; display: flex; gap: 8px; }
-.evento-botoes-detalhe button { flex: 1; padding: 8px; font-size: 13px; }
-button.btn-icon { flex: 0 0 auto; padding: 8px 12px; }
-
-/* --- CONFIGURAÇÕES & TEMPLATES (LISTAS) --- */
-.config-list { list-style: none; padding: 0; margin: 0; border: 1px solid #eee; border-radius: 6px; background: var(--fundo-elemento); }
-.config-list-item { 
-    display: flex; justify-content: space-between; align-items: center; 
-    padding: 12px 15px; border-bottom: 1px solid #f4f4f4; 
-}
-.config-list-item:last-child { border-bottom: none; }
-.config-item-text { flex: 1; padding-right: 10px; }
-.config-item-text .sigla { font-weight: 600; color: #333; display: block; margin-bottom: 2px; }
-.config-item-text .titulo { font-size: 0.85em; color: #777; }
-.config-item-actions { display: flex; gap: 5px; }
-/* Botões de ação menores e coloridos */
-.config-item-actions button.btn-edit { background-color: #ffc107; color: #333; }
-.config-item-actions button.btn-delete { background-color: #dc3545; color: white; }
-
-/* --- EDITOR DE TEMPLATES (Ajustes Finos) --- */
-.format-toolbar {
-    background: #eee;
-    padding: 5px;
-    border-radius: 4px 4px 0 0;
-    display: flex;
-    gap: 5px;
-    margin-top: 5px;
-}
-.format-toolbar button {
-    background: #fff;
-    color: #333;
-    padding: 4px 8px;
-    font-weight: bold;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    min-height: 0;
-    transition: background 0.1s;
-}
-.format-toolbar button:hover {
-    background: #ddd;
-}
-
-#tm-c {
-    border-radius: 0 0 4px 4px; /* Ajusta borda para encaixar na toolbar */
-    margin-top: 0;
-}
-#tm-v {
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 4px;
-    border: 1px dashed #ddd;
-    display: flex;
-    flex-wrap: wrap;
+    flex: 1; 
+    justify-content: center;
     gap: 5px;
 }
-#tm-v span {
-    font-family: monospace;
-    font-size: 0.9em;
-    background: #e9ecef;
-    border: 1px solid #ced4da;
-    cursor: pointer;
-    transition: background 0.1s;
+#app-nav-bar button .icon {
+    font-size: 1.2em;
 }
-#tm-v span:hover {
-    background: #d4e0e8;
-    color: #1A73E8;
+#app-nav-bar button .label {
+    font-size: 1em;
 }
+#app-nav-bar button.ativa { color: var(--cor-primaria); background-color: #f1f8ff; border-bottom-color: var(--cor-primaria); }
+#app-nav-bar button:hover { color: var(--cor-primaria); background-color: #f8f9fa; }
 
-/* --- MODAL --- */
-.modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 1000; display: none; backdrop-filter: blur(2px); }
-.modal {
-    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    background: var(--fundo-elemento); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    z-index: 1001; width: 90%; max-width: 500px; display: none;
-    border: 1px solid #fff;
-}
-.modal-header { padding: 15px 20px; border-bottom: 1px solid #eee; background: #f8f9fa; border-radius: 12px 12px 0 0; }
-.modal-body { padding: 20px; max-height: 70vh; overflow-y: auto; }
-.modal-footer { padding: 15px 20px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px; background: var(--fundo-elemento); border-radius: 0 0 12px 12px; }
 
-/* --- LOGIN (Reformulado: Moderno, Profissional) --- */
-#login-container { 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    justify-content: center; 
-    height: 100vh; 
-    background: var(--fundo-pagina); 
-    padding: 20px;
-}
-.login-box { 
-    width: 100%; 
-    max-width: 400px; 
-    padding: 35px; 
-    background: var(--fundo-elemento); 
-    border-radius: 16px; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
-}
-.login-box h2 {
-    border-bottom: none; 
-    padding-bottom: 0; 
-    margin-bottom: 5px; 
-    color: #333; 
-    font-size: 1.8em;
-    font-weight: 700;
-    text-align: center;
-}
-.login-box p {
-    margin-bottom: 25px;
-    color: #777;
-    text-align: center;
-}
-.password-wrapper { 
-    position: relative; 
-    display: flex; 
-    flex-direction: column;
-}
-.password-wrapper input {
-    padding-right: 45px; 
-}
-#toggle-password { 
-    position: absolute; 
-    right: 5px; 
-    top: 36px; 
-    background: none; 
-    border: none; 
-    cursor: pointer; 
-    color: #777; 
-    padding: 8px; 
-    min-height: 0; 
-    opacity: 0.8;
-}
-#toggle-password:hover {
-    opacity: 1;
-}
-.login-box button[type="submit"] {
-    width: 100%;
-    margin-top: 20px;
-    padding: 14px; 
-    font-size: 16px;
-    font-weight: 600;
-    border-radius: 8px;
-}
-.login-links { 
-    text-align: right; 
-    margin-top: 15px; 
-    font-size: 0.9em; 
-}
-.login-links a {
-    color: var(--cor-primaria);
-    text-decoration: none;
-    font-weight: 500;
-}
-.login-links a:hover {
-    text-decoration: underline;
-}
-
-/* --- TEXTAREA & GERADOR --- */
-#resultado, #paginaGerador textarea { 
-    width: 100%; height: 300px; font-family: 'Courier New', monospace; 
-    background: #333; color: #fff; border: 1px solid #555; padding: 15px; 
-    border-radius: 6px; line-height: 1.4; font-size: 16px; 
-}
-
-/* --- FOOTER (Rodapé) --- */
-footer {
-    text-align: center; 
-    padding: 20px 0;
-    font-size: 0.85em;
-    color: #777;
-    width: 100%;
+/* --- LAYOUTS DE PÁGINA (Desktop - Padrão) --- */
+.app-container {
     max-width: 1200px;
     margin: 0 auto;
+    background-color: var(--fundo-pagina);
+    min-height: 100vh;
+    flex-grow: 1; /* Permite que o container ocupe o espaço restante */
+    display: flex;
+    flex-direction: column;
 }
+.pagina {
+    display: none;
+    padding: 20px;
+    flex-wrap: wrap;
+    gap: 20px;
+    flex-grow: 1; /* Permite que a página ocupe o espaço restante */
+    overflow-y: auto; 
+}
+.pagina.ativa {
+    display: flex; 
+    flex-direction: row; 
+    align-items: stretch; /* Estica as colunas para a altura total da página */
+    overflow-y: hidden; /* O scroll será delegado para as colunas internas */
+}
+#paginaGerador.ativa, #paginaGestao.ativa {
+    display: flex;
+    flex-direction: row;
+    padding-bottom: 20px; 
+}
+
+.coluna {
+    background-color: var(--fundo-elemento);
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    flex: 1;
+    min-width: 300px;
+    /* Ajustes para o layout sem scroll: */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+#paginaGestao #col-lista {
+    flex: 2;
+}
+#paginaGerador #col-resultado {
+    /* Garante que a coluna resultado se estique */
+    flex: 1.5;
+}
+
+/* --- FORMULÁRIOS E INPUTS --- */
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9em; }
+input[type="text"], input[type="email"], input[type="password"], input[type="date"], input[type="time"], input[type="url"], input[type="number"], select, textarea, input[type="month"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+    font-family: var(--font-app);
+    background-color: white;
+}
+input[readonly], textarea[readonly] {
+    background-color: #f4f4f4;
+    cursor: default;
+}
+.row {
+    display: flex;
+    gap: 15px;
+}
+.row .form-group {
+    flex: 1;
+}
+.checkbox-group {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.checkbox-group label {
+    font-weight: 400;
+}
+
+
+/* --- BOTÕES GERAIS --- */
+button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    font-weight: 600;
+}
+button.primario { background-color: var(--cor-primaria); color: white; }
+button.primario:hover { background-color: var(--cor-secundaria); }
+button.secundario { background-color: #e9ecef; color: #333; }
+button.secundario:hover { background-color: #d8dbe0; }
+button.perigo { background-color: #dc3545; color: white; }
+button.perigo:hover { background-color: #bd2130; }
+button:active { transform: scale(0.99); }
+button.btn-icon { padding: 8px; font-size: 1.1em; }
+button.btn-add { margin-bottom: 15px; }
+
+/* --- RESULTADO / LISTA --- */
+#resultado {
+    background-color: #f4f4f4;
+    padding: 15px;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 0.9em;
+    border: 1px solid #ddd;
+    /* AJUSTE CRÍTICO: Ocupa o espaço restante e adiciona scroll interno */
+    flex-grow: 1; 
+    min-height: 150px;
+    overflow-y: auto; 
+    margin-top: 15px; /* Espaço após o título "Resultado" */
+}
+
+/* Garante que a tag PRE não tenha scroll duplo */
+#col-resultado > h2 {
+    margin-bottom: 0;
+}
+#col-form form {
+    /* Permite que o formulário de Gerador role se for muito longo */
+    overflow-y: auto;
+    flex-grow: 1; 
+}
+
+
+.event-list, .config-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1; /* Permite que a lista ocupe espaço restante */
+    overflow-y: auto; /* Scroll interno para a lista */
+    padding-right: 5px; /* Evita que o scrollbar toque a borda */
+}
+.event-list-item, .config-list-item {
+    background-color: white;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: nowrap; 
+    flex-shrink: 0; /* Garante que os itens não encolham verticalmente */
+}
+.event-item-text, .config-item-text {
+    flex: 1;
+    min-width: 0; 
+    padding: 0 10px;
+}
+.event-item-text .sigla, .config-item-text .sigla {
+    font-weight: bold;
+    font-size: 1.1em;
+    display: block;
+    white-space: nowrap; 
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.event-item-text .titulo, .config-item-text .titulo {
+    color: #555;
+    font-size: 0.9em;
+    display: block;
+}
+.event-item-actions, .config-item-actions {
+    display: flex;
+    gap: 5px;
+    flex-shrink: 0; 
+}
+.event-item-actions button, .config-list-item .config-item-actions button {
+    padding: 6px;
+    font-size: 0.8em;
+    border-radius: 4px;
+}
+
+/* --- LISTA DE EVENTOS (Específico) --- */
+.event-item-date {
+    background-color: var(--cor-primaria);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 60px;
+    flex-shrink: 0;
+}
+.event-item-date .dia {
+    font-size: 1.2em;
+    line-height: 1;
+}
+.event-item-date .mes {
+    font-size: 0.7em;
+    text-transform: uppercase;
+}
+.event-item-extra {
+    border-left: 5px solid #ffc107;
+}
+
+.filter-buttons {
+    margin-bottom: 15px;
+    flex-shrink: 0;
+}
+.filter-buttons button {
+    margin-right: 5px;
+    padding: 8px 12px;
+    font-size: 0.9em;
+    background-color: #f0f0f0;
+    color: #333;
+}
+.filter-buttons button.ativa {
+    background-color: var(--cor-primaria);
+    color: white;
+}
+
+
+/* --- CONFIGURAÇÕES E TEMPLATES (Geral) --- */
+.settings-layout {
+    display: flex;
+    width: 100%;
+    min-height: 500px;
+    gap: 20px;
+    flex-grow: 1;
+}
+.settings-sidebar {
+    width: 250px;
+    background-color: var(--fundo-elemento);
+    padding: 15px 0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+.settings-sidebar button.nav-btn {
+    width: 100%;
+    text-align: left;
+    background: none;
+    color: #333;
+    padding: 10px 20px;
+    border: none;
+    border-left: 4px solid transparent;
+    transition: all 0.2s;
+}
+.settings-sidebar button.nav-btn.ativa {
+    background-color: #e6f0ff;
+    color: var(--cor-primaria);
+    font-weight: bold;
+    border-left-color: var(--cor-primaria);
+}
+.settings-sidebar button.nav-btn:hover {
+    background-color: #f0f0f0;
+}
+.config-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.config-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+}
+.config-header h2 {
+    margin: 0;
+}
+
+
+/* --- MODAIS --- (Mantido sem alterações) */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: none;
+}
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    z-index: 1001;
+    display: none;
+    width: 90%;
+    max-width: 500px;
+    overflow: hidden;
+}
+.modal-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+    background-color: #f7f7f7;
+}
+.modal-header h3 { margin: 0; font-size: 1.2em; }
+.modal-body {
+    padding: 20px;
+}
+.modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #eee;
+    text-align: right;
+    background-color: #f7f7f7;
+}
+.modal-footer button {
+    margin-left: 10px;
+}
+
+/* --- LOGIN --- (Mantido sem alterações) */
+.login-container {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--cor-primaria);
+}
+.login-form {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 350px;
+    text-align: center;
+}
+.login-form h2 {
+    color: var(--cor-primaria);
+    margin-top: 0;
+}
+.login-form button {
+    margin-top: 15px;
+    width: 100%;
+}
+.password-wrapper {
+    position: relative;
+}
+.password-wrapper input {
+    padding-right: 40px; 
+}
+.password-wrapper button {
+    position: absolute;
+    top: 50%;
+    right: 5px;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin: 0;
+    padding: 5px;
+    width: auto;
+    font-size: 1.1em;
+}
+
+
+/* --- FOOTER --- */
+footer {
+    text-align: center;
+    padding: 10px 20px;
+    font-size: 0.8em;
+    color: #777;
+    margin-top: 20px;
+    flex-shrink: 0; /* Impede o footer de encolher */
+}
+
 
 /* --- RESPONSIVIDADE (MOBILE) --- */
 @media (max-width: 768px) {
-    
-    /* 0. CORREÇÃO DE PADDING E SCROLL */
     body {
-        padding-bottom: 70px; 
+        padding-bottom: 60px; 
+    }
+    .app-container {
+        /* Desativa o display:flex no body em mobile para evitar problemas de altura */
+        display: block; 
+        min-height: auto;
+        flex-grow: 0;
+    }
+    .pagina.ativa {
+        /* Garante que o container da página não tente ocupar 100% da altura em mobile */
+        display: flex; 
+        flex-direction: column; 
+        align-items: stretch;
+        overflow-y: visible;
+        flex-grow: 0;
     }
 
-    /* 1. NAVEGAÇÃO INFERIOR FIXA (ATIVADA NO MOBILE) */
-    .mobile-nav-footer {
-        display: flex;
+    /* 1. NAVEGAÇÃO INFERIOR FIXA */
+    #app-nav-bar { 
         position: fixed; 
         bottom: 0; 
         left: 0;
@@ -410,75 +556,97 @@ footer {
         box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
         border-top: 1px solid #eee;
     }
-    .mobile-nav-footer button {
-        flex: 1; 
-        padding: 5px;
-        min-height: 100%;
+    
+    #app-nav-bar button {
+        flex-direction: column; 
+        padding: 5px 0;
         border-bottom: none;
     }
-    .mobile-nav-footer button.ativa {
-        background-color: #f1f8ff;
+    #app-nav-bar button.ativa { 
+        background-color: #f8f9fa; 
+        border-bottom: none;
     }
-    .mobile-nav-footer button:hover {
-        background-color: #f8f9fa;
+    #app-nav-bar button .icon {
+        font-size: 1.4em;
+    }
+    #app-nav-bar button .label {
+        font-size: 0.75em;
     }
 
-    /* Esconde a navegação padrão que existia no index.html */
-    nav:not(.mobile-nav-footer) {
-        display: none !important;
-    }
-
-    /* 2. Ajuste de Páginas e Colunas */
-    .pagina { 
-        padding-left: 10px; 
-        padding-right: 10px; 
-    }
+    /* 2. Ajuste de Páginas */
+    .pagina { padding: 10px; }
     .coluna { 
         padding: 15px; 
         min-width: 100%; 
-        box-shadow: none; 
-        border: none;
+        height: auto; /* Permite que a altura seja automática no mobile */
+        flex-grow: 0;
     }
     
-    /* 3. Configurações (Menu Master-Detail empilhado) */
+    /* 3. Layout de Gerenciamento de Eventos (Empilha Form e Lista) */
+    #paginaGestao.ativa { flex-direction: column; }
+    #col-lista { 
+        order: -1; 
+        margin-bottom: 20px; 
+    }
+
+    /* Ajuste do Gerador no Mobile */
+    #resultado {
+        min-height: 100px; /* Reduz a altura mínima no mobile */
+        flex-grow: 0;
+        overflow-y: auto;
+    }
+    #col-form form {
+        overflow-y: visible;
+    }
+
+
+    /* 4. Lista de Eventos no Mobile */
+    .event-list { 
+        overflow-y: visible;
+    }
+    .event-list-item { 
+        flex-direction: column; 
+        align-items: flex-start; 
+        gap: 10px;
+    }
+    .event-item-date {
+        margin-bottom: 5px;
+    }
+    .event-item-text {
+        padding: 0; 
+        width: 100%;
+    }
+    .event-item-text .sigla {
+        white-space: normal; 
+    }
+    .event-item-actions {
+        width: 100%;
+        justify-content: flex-end; 
+    }
+
+    /* 5. Configurações (Menu Master-Detail empilhado) */
     .settings-layout { flex-direction: column; }
-    .settings-sidebar { width: 100%; border-right: none; border-bottom: 1px solid #eee; display: flex; overflow-x: auto; padding: 5px; }
+    .settings-sidebar { 
+        width: 100%; 
+        border-right: none; 
+        border-bottom: 1px solid #eee; 
+        display: flex; 
+        overflow-x: auto; 
+        padding: 5px; 
+        white-space: nowrap;
+    }
     .settings-sidebar button.nav-btn { 
         width: auto; 
-        white-space: nowrap; 
         border: 1px solid #eee; 
         border-radius: 20px; 
         margin-right: 5px; 
         padding: 8px 12px; 
         font-size: 13px; 
+        flex-shrink: 0;
     }
-    .settings-sidebar button.nav-btn.ativa { background: var(--cor-primaria); color: white; border: none; }
-    
-    /* 4. Colunas do Gerenciador de Eventos (col-form e col-lista) */
-    #paginaGestao.ativa { flex-direction: column; }
-    #col-lista { 
-        order: -1;
-    }
-    
-    /* 5. Listas de Templates/Configurações */
-    .config-list-item { 
-        flex-direction: column; 
-        align-items: flex-start; 
-        gap: 10px; 
-        padding: 15px; 
-    }
-    .config-item-text { width: 100%; padding: 0; }
-    .config-item-text .sigla { font-size: 1.1em; word-break: break-word; }
-    .config-item-actions { 
-        width: 100%; 
-        display: flex; 
-        justify-content: space-between; 
-        border-top: 1px dashed #eee;
-        padding-top: 8px;
-    }
-    .config-item-actions button {
-        flex: 1; 
-        text-align: center;
-        padding: 10px; 
+    .settings-sidebar button.nav-btn.ativa { 
+        background: var(--cor-primaria); 
+        color: white; 
+        border: none; 
     }
 }

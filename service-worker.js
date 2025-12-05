@@ -1,8 +1,8 @@
 // service-worker.js
 // Baseado na Workbox e estratégias de Service Worker do Firebase
 
-const CACHE_STATIC_NAME = 'agenda-wapp-static-v1.2';
-const CACHE_DYNAMIC_NAME = 'agenda-wapp-dynamic-v1.2';
+const CACHE_STATIC_NAME = 'agenda-wapp-static-v1.3'; // <<-- Versão Atualizada
+const CACHE_DYNAMIC_NAME = 'agenda-wapp-dynamic-v1.3'; // <<-- Versão Atualizada
 const CACHE_FIRESTORE_DATA = 'agenda-wapp-firestore-data';
 
 const STATIC_FILES = [
@@ -72,8 +72,6 @@ self.addEventListener('fetch', event => {
   }
   
   // C) Estratégia Stale-While-Revalidate para dados dinâmicos (Firestore/APIs)
-  // Nota: O Firestore SDK lida com o cache de dados offline *dele* automaticamente.
-  // Esta regra é principalmente para outras chamadas dinâmicas e fallback.
   event.respondWith(
     caches.match(event.request).then(response => {
       // Se houver cache, retorna, mas busca a versão mais nova em segundo plano.
@@ -84,9 +82,10 @@ self.addEventListener('fetch', event => {
           return networkResponse;
         });
       }).catch(err => {
-          // Se a rede falhar E não houver cache estático/dinâmico, aqui você pode mostrar 
-          // um fallback HTML customizado se necessário (já que o Firestore SDK tem seu próprio cache)
+          // Se a rede falhar, o SDK do Firestore lida com a falta de dados.
+          // Aqui, apenas registramos o erro de rede.
           console.log('[Service Worker] Falha na rede.');
+          throw err; // Rejeita para que a aplicação saiba que falhou.
       });
       
       // Retorna a resposta do cache ou a promessa de rede

@@ -2,29 +2,29 @@
 
 // 1. IMPORTAÇÕES DE SERVIÇOS E ELEMENTOS
 import { auth, db, COLECOES } from './services/firebase-api.js'; 
-import { showToast } from './services/helpers.js';
+import { showToast, initModalListeners } from './services/helpers.js';
 import * as DOM from './modules/dom-elements.js'; 
 // Módulos Funcionais
 import { carregarDadosIniciais as initEventsData, initEventsListeners, renderizarLista } from './modules/events.js';
 import { carregarGeradorSelects, initGeneratorListeners } from './modules/generator.js';
 import { loadSettings, initSettingsListeners } from './modules/settings.js'; 
-import { renderTemplates, initTemplatesListeners } from './modules/templates.js'; // NOVO: Importa Módulo Templates
+import { renderTemplates, initTemplatesListeners } from './modules/templates.js'; 
 
 
-// 2. VARIÁVEIS DE ESTADO GLOBAL
+// 2. VARIÁVEIS DE ESTADO GLOBAL (Centralizadas)
 let eventosDB = []; 
-let cidadesDB = [];
+let cidadesDB = []; 
 let comunsDB = [];
 let templatesDB = [];
 let participantesDB = [];
 let publicosAlvoDB = [];
-let titulosDB = [];
+let titulosDB = []; 
 let filtroAtual = 'todos'; 
 let currentUser = null;
 let currentSettingsTab = null;
 
 
-// 3. FUNÇÕES DE SUPORTE
+// 3. FUNÇÕES DE SUPORTE: Carregamento Inicial de Dados
 async function carregarDadosIniciais() {
     
     const loadCache = async (col, arr) => { 
@@ -35,10 +35,12 @@ async function carregarDadosIniciais() {
     // Carrega dados essenciais para Eventos e Configurações
     await initEventsData(); 
     
-    // Carrega Templates e Públicos para o Módulo Gerador e Templates
+    // Carrega Templates, Públicos (para Gerador) e Cidades/Títulos (para Configurações) no estado global
     await Promise.all([
         loadCache(COLECOES.templates, templatesDB),
         loadCache(COLECOES.publicos_alvo, publicosAlvoDB),
+        loadCache(COLECOES.cidades, cidadesDB), 
+        loadCache(COLECOES.eventos_titulos, titulosDB), 
     ]);
 
     carregarGeradorSelects();
@@ -48,6 +50,9 @@ async function carregarDadosIniciais() {
 // 4. INICIALIZAÇÃO PRINCIPAL (DOMContentLoaded)
 document.addEventListener('DOMContentLoaded', () => {
     
+    // LIGAÇÃO CRÍTICA DOS LISTENERS DE MODAL (AGORA PROTEGIDA)
+    initModalListeners(); 
+    
     // 4.1 LISTENERS DE AUTENTICAÇÃO
     auth.onAuthStateChanged(u => {
         if (u) {
@@ -55,16 +60,23 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.loginContainer.style.display = 'none';
             DOM.appContainer.style.display = 'block';
             DOM.userDisplay.textContent = u.email;
-            if (DOM.lastLoginDisplay) DOM.lastLoginDisplay.textContent = new Date(u.metadata.lastSignInTime).toLocaleDateString();
+            
+            if (DOM.lastLoginDisplay) {
+                DOM.lastLoginDisplay.textContent = new Date(u.metadata.lastSignInTime).toLocaleDateString();
+            }
+            const userDisplayDropdown = document.getElementById('user-display-dropdown');
+            if (userDisplayDropdown) {
+                userDisplayDropdown.textContent = u.email;
+            }
             
             // CARREGA DADOS GERAIS
             carregarDadosIniciais(); 
 
-            // LIGA LISTENERS DOS MÓDULOS
+            // LIGA LISTENERS DOS MÓDULOS E INJETA O ESTADO GLOBAL
             initEventsListeners(templatesDB);
             initGeneratorListeners(eventosDB, templatesDB); 
-            initSettingsListeners(); 
-            initTemplatesListeners(); // NOVO: Inicializa listeners do Módulo Templates
+            initSettingsListeners(cidadesDB, titulosDB); 
+            initTemplatesListeners(); 
 
             // Inicia o listener de eventos do Firestore (Consulta Principal)
             db.collection(COLECOES.eventos).onSnapshot(s => { 
@@ -79,24 +91,37 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 4.2 LÓGICA DE NAVEGAÇÃO
-    DOM.navButtons.forEach(b => b.onclick = () => { 
-        DOM.navButtons.forEach(x => x.classList.remove('ativa')); 
-        DOM.paginas.forEach(x => x.classList.remove('ativa')); 
+    const navButtons = document.querySelectorAll('#app-nav-bar button');
+    const paginas = document.querySelectorAll('.pagina');
+
+    navButtons.forEach(b => b.onclick = () => { 
+        navButtons.forEach(x => x.classList.remove('ativa')); 
+        paginas.forEach(x => x.classList.remove('ativa')); 
         b.classList.add('ativa'); 
         
-        const targetId = b.id.replace('btnNav','pagina');
-        const paginaTarget = targetId.includes('Config') ? 'paginaConfiguracoes' : targetId;
+        let targetId;
+        if (b.id === 'btnNavConfig') {
+            targetId = 'paginaConfiguracoes';
+        } else {
+            targetId = b.id.replace('btnNav', 'pagina'); 
+        }
         
-        document.getElementById(paginaTarget).classList.add('ativa'); 
+        const paginaTarget = document.getElementById(targetId);
         
-        // Ação específica para o Módulo Configurações
+        if (paginaTarget) {
+            paginaTarget.classList.add('ativa'); 
+        } else {
+            showToast(`Erro: Página ${targetId} não encontrada.`, true);
+            return; 
+        }
+        
+        // Ação específica para carregar dados dos Módulos
         if(b.id === 'btnNavConfig') {
             loadSettings('cidades'); 
         } 
         
-        // Ação específica para o Módulo Templates
         if(b.id === 'btnNavTemplates') {
-            renderTemplates(); // Carrega a lista de templates ao entrar na página
+            renderTemplates(); 
         }
     });
     
@@ -126,7 +151,10 @@ document.addEventListener('DOMContentLoaded', () => {
           
     av.onclick = () => dr.classList.toggle('show'); 
     window.onclick = (e) => { 
-        if (!av.contains(e.target) && !dr.contains(e.target)) dr.classList.remove('show'); 
+        const isAvatarOrDropdown = av.contains(e.target) || dr.contains(e.target);
+        if (!isAvatarOrDropdown) {
+             dr.classList.remove('show'); 
+        }
     };
     
     document.getElementById('checkLinkExterno').addEventListener('change', (e) => 
