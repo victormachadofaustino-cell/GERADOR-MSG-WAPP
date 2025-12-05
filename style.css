@@ -2,7 +2,7 @@
 body { 
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
     line-height: 1.6; 
-    background-color: #f4f7f6; /* Fundo levemente mais moderno */
+    background-color: #f4f7f6; 
     color: #333; 
     margin: 0; 
     padding-bottom: 40px;
@@ -56,7 +56,7 @@ nav {
     flex-wrap: wrap; 
     border-bottom: 1px solid #ddd;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    position: sticky; top: 0; z-index: 90; /* Fixa o menu no topo */
+    position: sticky; top: 0; z-index: 90;
 }
 nav button { 
     background: none; border: none; color: #555; 
@@ -91,11 +91,12 @@ button {
     padding: 10px 15px; border: none; border-radius: 6px; 
     cursor: pointer; font-size: 15px; font-weight: 500;
     transition: background 0.2s, transform 0.1s;
+    min-height: 44px; /* MELHORIA: Torna o botão mais fácil de tocar no celular */
 }
 button:active { transform: scale(0.98); }
 button:hover { background-color: #0056b3; }
 button.secundario { background-color: #6c757d; }
-button.btn-add { background-color: #28a745; font-size: 13px; padding: 6px 12px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; }
+button.btn-add { background-color: #28a745; font-size: 13px; padding: 6px 12px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; min-height: 35px; }
 button.btn-danger { background-color: #dc3545; }
 button:disabled { background-color: #ccc; cursor: not-allowed; }
 #btnAdicionarEvento { background-color: #28a745; width: 100%; margin-top: 20px; padding: 12px; font-size: 16px; }
@@ -174,17 +175,17 @@ button.btn-icon { flex: 0 0 auto; padding: 8px 12px; }
 
 /* --- RESPONSIVIDADE (MOBILE) - A MÁGICA ACONTECE AQUI --- */
 @media (max-width: 768px) {
-    /* 1. Navegação em Grid 2x2 Compacto */
+    /* 1. Navegação em Grid 2x2 Compacto (Aprimorada) */
     nav { 
         display: grid; 
-        grid-template-columns: 1fr 1fr; 
+        grid-template-columns: 1fr 1fr; /* 2 botões por linha */
         gap: 0; 
         padding: 0;
     }
     nav button {
         width: 100%;
-        padding: 12px 5px;
-        font-size: 13px;
+        padding: 15px 5px; /* MAIOR ESPAÇO: Aumenta a área de toque vertical */
+        font-size: 14px; /* MELHOR LEITURA: Um pouco maior que o original mobile */
         text-align: center;
         border-bottom: 1px solid #eee;
         border-right: 1px solid #eee;
@@ -194,34 +195,54 @@ button.btn-icon { flex: 0 0 auto; padding: 8px 12px; }
         border-bottom: 3px solid #0056b3;
     }
 
-    /* 2. Ajuste de Páginas */
+    /* 2. Ajuste de Páginas e Colunas */
     .pagina { padding: 10px; }
-    .coluna { padding: 15px; min-width: 100%; }
+    .coluna { 
+        padding: 15px; 
+        min-width: 100%; 
+        box-shadow: none; /* Remove a sombra em mobile para um visual mais limpo */
+        border: none;
+    }
     
     /* 3. Configurações (Menu Master-Detail empilhado) */
     .settings-layout { flex-direction: column; }
     .settings-sidebar { width: 100%; border-right: none; border-bottom: 1px solid #eee; display: flex; overflow-x: auto; padding: 5px; }
-    .settings-sidebar button.nav-btn { width: auto; white-space: nowrap; border: 1px solid #eee; border-radius: 20px; margin-right: 5px; padding: 5px 12px; font-size: 13px; }
+    .settings-sidebar button.nav-btn { 
+        width: auto; 
+        white-space: nowrap; 
+        border: 1px solid #eee; 
+        border-radius: 20px; 
+        margin-right: 5px; 
+        padding: 8px 12px; /* MELHORIA: Aumenta o padding para toque */
+        font-size: 13px; 
+    }
     .settings-sidebar button.nav-btn.ativa { background: #0056b3; color: white; border: none; }
     
-    /* 4. Listas de Templates (Evitar quebra) */
+    /* 4. Listas de Templates/Configurações (Evitar quebra) */
     .config-list-item { 
         flex-direction: column; 
         align-items: flex-start; 
         gap: 10px; 
+        padding: 15px; /* MELHORIA: Mais espaço dentro do item da lista */
     }
     .config-item-text { width: 100%; padding: 0; }
-    .config-item-text .sigla { font-size: 1em; word-break: break-word; }
+    .config-item-text .sigla { font-size: 1.1em; word-break: break-word; } /* Texto principal maior */
     .config-item-actions { 
         width: 100%; 
         display: flex; 
-        justify-content: flex-end; /* Botões alinhados à direita */
+        justify-content: space-between; /* MELHORIA: Botões Edit/Delete ficam separados, um em cada ponta */
         border-top: 1px dashed #eee;
         padding-top: 8px;
     }
     .config-item-actions button {
         flex: 1; /* Botões grandes para toque */
         text-align: center;
-        padding: 8px;
+        padding: 10px; /* MELHORIA: Aumenta o padding do botão */
+    }
+
+    /* 5. Colunas do Gerenciador de Eventos (col-form e col-lista) */
+    #paginaGestao.ativa { flex-direction: column; }
+    #col-lista { 
+        order: -1; /* Coloca a lista de eventos (Lista de Eventos) acima do formulário no celular */
     }
 }
