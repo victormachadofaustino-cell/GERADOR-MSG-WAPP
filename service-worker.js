@@ -1,15 +1,15 @@
 // service-worker.js
 // Baseado na Workbox e estratégias de Service Worker do Firebase
 
-const CACHE_STATIC_NAME = 'agenda-wapp-static-v1.3'; // <<-- Versão Atualizada
-const CACHE_DYNAMIC_NAME = 'agenda-wapp-dynamic-v1.3'; // <<-- Versão Atualizada
+const CACHE_STATIC_NAME = 'agenda-wapp-static-v1.3';
+const CACHE_DYNAMIC_NAME = 'agenda-wapp-dynamic-v1.3';
 const CACHE_FIRESTORE_DATA = 'agenda-wapp-firestore-data';
 
 const STATIC_FILES = [
   '/',
   '/index.html',
   '/style.css',
-  '/src/main.js', // O novo ponto de entrada JS
+  '/src/main.js', 
   '/src/services/firebase-api.js',
   '/src/services/helpers.js',
   '/src/modules/dom-elements.js',
@@ -18,7 +18,6 @@ const STATIC_FILES = [
   '/src/modules/settings.js',
   '/src/modules/templates.js',
   '/manifest.json',
-  // Ícones (Certifique-se de que existem na pasta icons/)
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png'
 ];
@@ -49,12 +48,11 @@ self.addEventListener('activate', event => {
       }));
     })
   );
-  // Garante que a Service Worker assuma o controle imediatamente
   return self.clients.claim();
 });
 
 
-// 3. Estratégia de Cache
+// 3. Estratégia de Cache - CORREÇÃO CRÍTICA
 self.addEventListener('fetch', event => {
   const requestUrl = new URL(event.request.url);
 
@@ -66,29 +64,33 @@ self.addEventListener('fetch', event => {
   
   // B) Network-Only para requisições de autenticação e functions
   if (requestUrl.host.includes('googleapis.com') || 
-      requestUrl.host.includes('firebaseapp.com') && !event.request.url.includes('firestore')) {
+      requestUrl.host.includes('firebaseapp.com')) {
     event.respondWith(fetch(event.request));
     return;
   }
   
-  // C) Estratégia Stale-While-Revalidate para dados dinâmicos (Firestore/APIs)
+  // C) Estratégia Stale-While-Revalidate/Cache-Fallback para dados dinâmicos
   event.respondWith(
     caches.match(event.request).then(response => {
-      // Se houver cache, retorna, mas busca a versão mais nova em segundo plano.
+      
+      // Se a resposta estiver no cache, inicia a busca de rede em segundo plano.
       const fetchPromise = fetch(event.request).then(networkResponse => {
-        // Atualiza o cache dinâmico com a nova resposta
+        // Atualiza o cache dinâmico
         return caches.open(CACHE_DYNAMIC_NAME).then(cache => {
           cache.put(event.request, networkResponse.clone());
           return networkResponse;
         });
       }).catch(err => {
-          // Se a rede falhar, o SDK do Firestore lida com a falta de dados.
-          // Aqui, apenas registramos o erro de rede.
-          console.log('[Service Worker] Falha na rede.');
-          throw err; // Rejeita para que a aplicação saiba que falhou.
+          console.log('[Service Worker] Falha na rede. Servindo cache, se disponível.', err);
+          // CRÍTICO: Se a rede falhar, retorna a resposta do cache (se existir). 
+          // Se o cache for 'null', o "return response" no final lida com isso.
+          return response; 
       });
       
-      // Retorna a resposta do cache ou a promessa de rede
+      // Retorna a resposta do cache imediatamente (se existir), ou espera a promessa de rede.
+      // Se 'response' for null, ele espera por fetchPromise.
+      // Se fetchPromise falhar, ele retorna a última resposta do cache (se houver) ou undefined,
+      // mas como o retorno está fora do catch global, evita o TypeError.
       return response || fetchPromise;
     })
   );

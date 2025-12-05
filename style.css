@@ -271,7 +271,6 @@ button.btn-add { margin-bottom: 15px; }
     background-color: #f4f4f4;
     padding: 15px;
     border-radius: 8px;
-    white-space: pre-wrap;
     word-wrap: break-word;
     font-size: 0.9em;
     border: 1px solid #ddd;
@@ -279,7 +278,15 @@ button.btn-add { margin-bottom: 15px; }
     min-height: 150px;
     overflow-y: auto; 
     margin-top: 15px; 
+    
+    /* Adicionais para a TEXTAREA: */
+    width: 100%;
+    box-sizing: border-box; /* Garante que o padding não aumente a largura */
+    resize: none; /* Impede que o usuário redimensione */
+    font-family: monospace; /* Mantém a formatação de pré-visualização */
+    white-space: pre-wrap;
 }
+
 #col-resultado > h2 {
     margin-bottom: 0;
 }

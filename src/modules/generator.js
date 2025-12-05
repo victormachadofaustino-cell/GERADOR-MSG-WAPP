@@ -1,9 +1,9 @@
 // src/modules/generator.js
 
 // 1. IMPORTAÇÕES NECESSÁRIAS
-import { db, COLECOES } from '../services/firebase-api.js';
+import { INSTANCES, COLECOES } from '../services/firebase-api.js'; // CRÍTICO: Importa INSTANCES
 import * as DOM from './dom-elements.js';
-import * as Helpers from '../services/helpers.js'; 
+import * as Helpers from './helpers.js'; 
 
 // Variáveis de Módulo (Devem ser atualizadas pelo main.js no modelo final)
 let eventosDB = []; 
@@ -16,20 +16,23 @@ const VARIAVEIS_LAYOUT = {
     '[lista_reunioes]':'Lista Reuniões', '[lista_ensaios]':'Lista Ensaios'
 };
 const VARIAVEIS_SNIPPET = {
-    '[dia_semana]':'Dia', '[data]':'Data', '[hora]':'Hora', 
-    '[sigla]':'Sigla', '[titulo]':'Título', '[desc_data]':'Desc. Data', '[cidade]':'Cidade', 
-    '[local]':'Comum', '[local_detalhe]':'Sala', '[publico]':'Participantes', 
-    '[quantidade]':'Qtd', '\\[link\\]':'Link', '\\[observacoes\\]':'Obs'
+    '\\[dia_semana\\]':'Dia', '\\[data\\]':'Data', '\\[hora\\]':'Hora', 
+    '\\[sigla\\]':'Sigla', '\\[titulo\\]':'Título', '\\[desc_data\\]':'Desc. Data', '\\[cidade\\]':'Cidade', 
+    '\\[local\\]':'Comum', '\\[local_detalhe\\]':'Sala', '\\[publico\\]':'Participantes', 
+    '\\[quantidade\\]':'Qtd', '\\[link\\]':'Link', '\\[observacoes\\]':'Obs'
 };
 const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 
 // 2. FUNÇÕES DE CARREGAMENTO DE SELECTS
 export async function carregarGeradorSelects() {
+    // CRÍTICO: Usar INSTANCES.db
+    const db = INSTANCES.db;
+    if (!db) return;
+
     // Busca Pública (para select_publico)
     const sp = await db.collection(COLECOES.publicos_alvo).orderBy('nome').get();
     publicosAlvoDB.length = 0;
-    // CORRIGIDO: Usando o elemento DOM correto (selectPublicoGerador)
     if (DOM.selectPublicoGerador) { 
         DOM.selectPublicoGerador.innerHTML = '<option value="">-- Selecione --</option>';
         sp.forEach(d => {
@@ -41,7 +44,6 @@ export async function carregarGeradorSelects() {
     // Busca Templates (para select_template - Apenas Layouts)
     const st = await db.collection(COLECOES.templates).orderBy('nome').get();
     templatesDB.length = 0;
-    // CORRIGIDO: Usando o elemento DOM correto (selectTemplateGerador)
     if (DOM.selectTemplateGerador) { 
         DOM.selectTemplateGerador.innerHTML = '<option value="">-- Selecione --</option>';
         st.forEach(d => {
@@ -56,7 +58,6 @@ export async function carregarGeradorSelects() {
     const dataAtual = new Date();
     const mesAtual = (dataAtual.getMonth() + 1).toString().padStart(2, '0');
     const anoAtual = dataAtual.getFullYear();
-    // CORRIGIDO: Usando o elemento DOM correto (mesAnoRef)
     if (DOM.mesAnoRef) { 
         DOM.mesAnoRef.value = `${anoAtual}-${mesAtual}`;
     }
@@ -65,9 +66,8 @@ export async function carregarGeradorSelects() {
 
 // 3. FUNÇÃO CORE: GERAR MENSAGEM EM MASSA
 function gerarMensagemMassa(e) {
-    e.preventDefault(); // Evita o recarregamento do formulário
+    e.preventDefault(); 
     
-    // CORRIGIDO: Usando os elementos DOM corretos
     const mes = DOM.mesAnoRef.value; 
     const pub = DOM.selectPublicoGerador.value;
     const tplId = DOM.selectTemplateGerador.value;
@@ -75,8 +75,8 @@ function gerarMensagemMassa(e) {
     if(!mes || !pub || !tplId) return Helpers.showToast("Preencha todos os campos do gerador", true);
     
     const lay = templatesDB.find(t=>t.id===tplId);
-    const snipMeet = templatesDB.find(t=>t.id===lay.snippet_meeting_ref);
-    const snipReh = templatesDB.find(t=>t.id===lay.snippet_rehearsal_ref);
+    const snipMeet = templatesDB.find(t=>t.id===lay?.snippet_meeting_ref); 
+    const snipReh = templatesDB.find(t=>t.id===lay?.snippet_rehearsal_ref); 
     
     if(!snipMeet && !snipReh) return Helpers.showToast("Layout sem snippets de Reunião e Ensaio configurados.", true);
 
@@ -87,7 +87,8 @@ function gerarMensagemMassa(e) {
         const d = new Date(ev.data_hora); 
         const mm = (d.getMonth()+1).toString().padStart(2,'0'); 
         const a = d.getFullYear().toString();
-        return mm===m && a===ano && (ev.publicos_alvo_refs||[]).includes(pub);
+        const hasPublico = (ev.publicos_alvo_refs || []).includes(pub); 
+        return mm===m && a===ano && hasPublico;
     });
     
     if(allEvts.length===0) { 
@@ -105,7 +106,7 @@ function gerarMensagemMassa(e) {
         let txt = '';
         evList.forEach(ev => {
             let row = snippet.corpo;
-            const d = Helpers.formatarDataHora(ev.data_hora); // CORREÇÃO: Usando Helpers.
+            const d = Helpers.formatarDataHora(ev.data_hora); 
             const map = {
                 '\\[sigla\\]': ev.titulo_sigla, '\\[titulo\\]': ev.titulo_nome, '\\[data\\]': d.data, '\\[hora\\]': d.hora,
                 '\\[dia_semana\\]': d.diaSemana, '\\[cidade\\]': ev.cidade_nome, '\\[local\\]': ev.comum_nome, 
@@ -140,32 +141,27 @@ export function initGeneratorListeners(eventosDB_ref, templatesDB_ref) {
     eventosDB = eventosDB_ref; 
     templatesDB = templatesDB_ref;
     
-    // 4.2 Botão Gerar Mensagem (CORRIGIDO: Usando o DOM.btnGerar e atribuindo a função gerarMensagemMassa)
+    // 4.2 Botão Gerar Mensagem
     if(DOM.btnGerar) {
         DOM.btnGerar.onclick = gerarMensagemMassa; 
     }
     
-    // 4.3 Botão Copiar (btnCopiar está no index.html)
+    // 4.3 Botão Copiar
     const btnCopiar = document.getElementById('btnCopiar');
     if (btnCopiar) {
         btnCopiar.onclick = () => { 
             const t=DOM.resultado; 
             if (t) {
-                t.select(); 
-                navigator.clipboard.writeText(t.value); 
-                Helpers.showToast("Copiado para a área de transferência"); 
+                navigator.clipboard.writeText(t.value)
+                    .then(() => {
+                        Helpers.showToast("Copiado para a área de transferência");
+                    })
+                    .catch(err => {
+                        Helpers.showToast("Erro ao copiar: " + err, true);
+                    }); 
             }
         };
     }
-    
-    // 4.4 Botão Limpar (Não existe no HTML, mas vamos deixar a funcionalidade para o Gerar/Copiar)
-    // Se você quiser um botão Limpar, adicione <button type="button" class="secundario" id="btnLimpar">Limpar</button> no index.html
-    // const btnLimpar = document.getElementById('btnLimpar');
-    // if (btnLimpar) {
-    //     btnLimpar.onclick = () => {
-    //         if (DOM.resultado) DOM.resultado.value = '';
-    //     }
-    // }
 }
 
 // 5. FUNÇÕES DE SUPORTE PARA OUTROS MÓDULOS (ex: Botões da Lista de Eventos)
@@ -179,7 +175,7 @@ export function gerarSnippetBotao(id, tipo, templatesDB_ref, eventosDB_ref) {
     const ev = eventosDB.find(x=>x.id===id); 
     if(!ev) return Helpers.showToast("Evento não encontrado.", true);
     
-    const d = Helpers.formatarDataHora(ev.data_hora); // CORREÇÃO: Usando Helpers.
+    const d = Helpers.formatarDataHora(ev.data_hora); 
     let txt = t.corpo;
     
     const map = { 
@@ -195,7 +191,6 @@ export function gerarSnippetBotao(id, tipo, templatesDB_ref, eventosDB_ref) {
     
     if (DOM.resultado) DOM.resultado.value = txt; 
     
-    // Corrige o ID do botão de navegação para o novo padrão:
     const btnNavGerador = document.getElementById('btnNavGerador');
     if (btnNavGerador) {
         btnNavGerador.click(); // Navega para o módulo Gerador
@@ -203,7 +198,7 @@ export function gerarSnippetBotao(id, tipo, templatesDB_ref, eventosDB_ref) {
     Helpers.showToast("Snippet gerado, navegue para o módulo Gerador.");
 }
 
-// 6. FUNÇÃO DE ATUALIZAÇÃO DE ESTADO
+// 6. FUNÇÃO DE ATUALIZAÇÃO DE ESTADO (Chamada pelo main.js)
 export function updateGeneratorState(events, templates) {
     eventosDB = events;
     templatesDB = templates;

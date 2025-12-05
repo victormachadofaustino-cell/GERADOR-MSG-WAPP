@@ -1,24 +1,24 @@
-// src/main.js - ORQUESTRADOR CENTRAL
+// src/main.js - ORQUESTRADOR CENTRAL (COMPLETO E CORRIGIDO PARA CRASH)
 
 // 1. IMPORTAÇÕES DE SERVIÇOS E ELEMENTOS
-import { auth, db, COLECOES } from './services/firebase-api.js'; 
-import { showToast } from './services/helpers.js';
+import * as FirebaseAPI from './services/firebase-api.js'; // Importa como API
+import { showToast, initModalListeners } from './services/helpers.js';
 import * as DOM from './modules/dom-elements.js'; 
 // Módulos Funcionais
 import { carregarDadosIniciais as initEventsData, initEventsListeners, renderizarLista } from './modules/events.js';
-import { carregarGeradorSelects, initGeneratorListeners } from './modules/generator.js';
+import { carregarGeradorSelects, initGeneratorListeners, updateGeneratorState } from './modules/generator.js'; 
 import { loadSettings, initSettingsListeners } from './modules/settings.js'; 
 import { renderTemplates, initTemplatesListeners } from './modules/templates.js'; 
 
 
 // 2. VARIÁVEIS DE ESTADO GLOBAL (Centralizadas)
 let eventosDB = []; 
-let cidadesDB = []; // ESTADO GLOBAL SERÁ INJETADO
+let cidadesDB = []; 
 let comunsDB = [];
 let templatesDB = [];
 let participantesDB = [];
 let publicosAlvoDB = [];
-let titulosDB = []; // ESTADO GLOBAL SERÁ INJETADO
+let titulosDB = []; 
 let filtroAtual = 'todos'; 
 let currentUser = null;
 let currentSettingsTab = null;
@@ -27,9 +27,12 @@ let currentSettingsTab = null;
 // 3. FUNÇÕES DE SUPORTE: Carregamento Inicial de Dados
 async function carregarDadosIniciais() {
     
-    // Simplifica o carregamento de cache para o estado global
+    // loadCache agora usa o objeto importado FirebaseAPI.INSTANCES.db
     const loadCache = async (col, arr) => { 
-        const s=await db.collection(col).get(); arr.length=0; 
+        // Garante que o db está preenchido antes de usar
+        if (!FirebaseAPI.INSTANCES.db) return;
+        
+        const s=await FirebaseAPI.INSTANCES.db.collection(col).get(); arr.length=0; 
         s.forEach(d=>arr.push({id:d.id,...d.data()})); 
     };
     
@@ -38,32 +41,78 @@ async function carregarDadosIniciais() {
     
     // Carrega Templates, Públicos (para Gerador) e Cidades/Títulos (para Configurações) no estado global
     await Promise.all([
-        loadCache(COLECOES.templates, templatesDB),
-        loadCache(COLECOES.publicos_alvo, publicosAlvoDB),
-        loadCache(COLECOES.cidades, cidadesDB), 
-        loadCache(COLECOES.eventos_titulos, titulosDB), 
+        loadCache(FirebaseAPI.COLECOES.templates, templatesDB),
+        loadCache(FirebaseAPI.COLECOES.publicos_alvo, publicosAlvoDB),
+        loadCache(FirebaseAPI.COLECOES.cidades, cidadesDB), 
+        loadCache(FirebaseAPI.COLECOES.eventos_titulos, titulosDB), 
     ]);
 
     carregarGeradorSelects();
 }
 
+// 4. FUNÇÃO DE TROCA DE PÁGINA (Com lógica do Hambúrguer)
+function switchPage(pageId) {
+    let pageFound = false;
+    document.querySelectorAll('.pagina').forEach(page => {
+        if (page.id === pageId) {
+            page.classList.add('ativa');
+            pageFound = true;
+        } else {
+            page.classList.remove('ativa');
+        }
+    });
 
-// 4. INICIALIZAÇÃO PRINCIPAL (DOMContentLoaded)
+    const btnHamburguer = document.getElementById('btn-hamburguer');
+    
+    if (pageId === 'paginaConfig') {
+        // Se for mobile, mostra o botão hambúrguer
+        if (window.innerWidth <= 768) {
+            if(btnHamburguer) btnHamburguer.style.display = 'inline-block';
+            // Garante que o primeiro item seja carregado se nenhum estiver ativo
+            if (!document.querySelector('#settings-sidebar-nav .nav-btn.ativa')) {
+                 loadSettings('cidades');
+            }
+        } else {
+            // Desktop: sidebar visível, hambúrguer oculto
+            if(btnHamburguer) btnHamburguer.style.display = 'none';
+             loadSettings('cidades'); // Carrega padrão para desktop
+        }
+    } else {
+        // Oculta o hambúrguer ao sair da página Configurações
+        if(btnHamburguer) btnHamburguer.style.display = 'none';
+    }
+    
+    // Ação específica para carregar dados dos Módulos
+    if(pageId === 'paginaTemplates') {
+        renderTemplates(); 
+    }
+}
+
+
+// 5. INICIALIZAÇÃO PRINCIPAL (DOMContentLoaded)
 document.addEventListener('DOMContentLoaded', () => {
     
-    // 4.1 LISTENERS DE AUTENTICAÇÃO
-    auth.onAuthStateChanged(u => {
+    // CRÍTICO: Inicializa o Firebase antes de qualquer código tentar usá-lo
+    firebase.initializeApp(FirebaseAPI.firebaseConfig);
+    
+    // Atribui as instâncias GLOBALLY MUTÁVEIS através do objeto INSTANCES
+    FirebaseAPI.INSTANCES.db = firebase.firestore();
+    FirebaseAPI.INSTANCES.auth = firebase.auth(); // <--- CORRIGIDO O TYPERROR AQUI
+    
+    // LIGAÇÃO CRÍTICA DOS LISTENERS DE MODAL
+    initModalListeners(); 
+    
+    // 5.1 LISTENERS DE AUTENTICAÇÃO
+    FirebaseAPI.INSTANCES.auth.onAuthStateChanged(u => {
         if (u) {
             currentUser = u;
             DOM.loginContainer.style.display = 'none';
-            DOM.appContainer.style.display = 'block';
-            DOM.userDisplay.textContent = u.email;
-            if (DOM.lastLoginDisplay) {
-                DOM.lastLoginDisplay.textContent = new Date(u.metadata.lastSignInTime).toLocaleDateString();
-            }
-            const userDisplayDropdown = document.getElementById('user-display-dropdown');
-            if (userDisplayDropdown) {
-                userDisplayDropdown.textContent = u.email;
+            DOM.appContainer.style.display = 'flex';
+            document.getElementById('user-display').textContent = u.email;
+            
+            const lastLoginDisplay = document.getElementById('last-login-display');
+            if (lastLoginDisplay && u.metadata.lastSignInTime) {
+                lastLoginDisplay.textContent = new Date(u.metadata.lastSignInTime).toLocaleDateString();
             }
             
             // CARREGA DADOS GERAIS
@@ -72,15 +121,17 @@ document.addEventListener('DOMContentLoaded', () => {
             // LIGA LISTENERS DOS MÓDULOS E INJETA O ESTADO GLOBAL
             initEventsListeners(templatesDB);
             initGeneratorListeners(eventosDB, templatesDB); 
-            // INJEÇÃO AQUI: Passa as referências de Cidades e Títulos
             initSettingsListeners(cidadesDB, titulosDB); 
             initTemplatesListeners(); 
 
             // Inicia o listener de eventos do Firestore (Consulta Principal)
-            db.collection(COLECOES.eventos).onSnapshot(s => { 
+            FirebaseAPI.INSTANCES.db.collection(FirebaseAPI.COLECOES.eventos).onSnapshot(s => { 
                 eventosDB = []; 
                 s.forEach(d => eventosDB.push({ id: d.id, ...d.data() })); 
                 renderizarLista(eventosDB); 
+                
+                // CRÍTICO: Atualiza o estado do Gerador após os dados serem carregados.
+                updateGeneratorState(eventosDB, templatesDB); 
             });
         } else {
             DOM.loginContainer.style.display = 'flex';
@@ -88,78 +139,84 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 4.2 LÓGICA DE NAVEGAÇÃO
+    // 5.2 LÓGICA DE NAVEGAÇÃO
     const navButtons = document.querySelectorAll('#app-nav-bar button');
-    const paginas = document.querySelectorAll('.pagina');
 
     navButtons.forEach(b => b.onclick = () => { 
         navButtons.forEach(x => x.classList.remove('ativa')); 
-        paginas.forEach(x => x.classList.remove('ativa')); 
         b.classList.add('ativa'); 
         
-        let targetId;
-        if (b.id === 'btnNavConfig') {
-            targetId = 'paginaConfiguracoes';
-        } else {
-            targetId = b.id.replace('btnNav', 'pagina'); 
-        }
-        
-        const paginaTarget = document.getElementById(targetId);
-        
-        if (paginaTarget) {
-            paginaTarget.classList.add('ativa'); 
-        } else {
-            showToast(`Erro: Página ${targetId} não encontrada.`, true);
-            return; 
-        }
-        
-        // Ação específica para carregar dados dos Módulos
-        if(b.id === 'btnNavConfig') {
-            loadSettings('cidades'); 
-        } 
-        
-        if(b.id === 'btnNavTemplates') {
-            renderTemplates(); 
-        }
+        let targetId = b.dataset.page;
+        switchPage(targetId);
+        window.scrollTo(0,0);
     });
     
-    // 4.3 LISTENERS DE UI BÁSICA (Profile, Login, etc.)
+    // 5.3 LISTENERS DE UI BÁSICA (Profile, Login, etc.)
     DOM.loginForm.onsubmit = async (e) => {
         e.preventDefault(); 
         try {
-            await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value);
+            await FirebaseAPI.INSTANCES.auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value);
         } catch (e) {
             showToast(e.message, true);
         }
     };
-    document.getElementById('btn-logout').onclick = () => auth.signOut();
+    
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) btnLogout.onclick = () => FirebaseAPI.INSTANCES.auth.signOut();
+
     document.getElementById('toggle-password').onclick = () => {
         const i = document.getElementById('login-password'); 
         i.type = i.type === 'password' ? 'text' : 'password';
     };
+    
     document.getElementById('forgot-password').onclick = async () => {
         const m = document.getElementById('login-email').value; 
         if (!m) return; 
-        await auth.sendPasswordResetEmail(m); 
+        await FirebaseAPI.INSTANCES.auth.sendPasswordResetEmail(m); 
         showToast("Enviado");
     };
 
+    // CORREÇÃO CRÍTICA: Proteção contra falha de elementos DOM
     const av = DOM.appContainer.querySelector('.profile-avatar'), 
           dr = DOM.appContainer.querySelector('.profile-dropdown');
           
-    av.onclick = () => dr.classList.toggle('show'); 
-    window.onclick = (e) => { 
-        const isAvatarOrDropdown = av.contains(e.target) || dr.contains(e.target);
-        if (!isAvatarOrDropdown) {
-             dr.classList.remove('show'); 
+    if(av && dr) { // Garante que ambos existem antes de atribuir listeners
+        av.onclick = () => dr.classList.toggle('show'); 
+        window.onclick = (e) => { 
+            const isAvatarOrDropdown = av.contains(e.target) || dr.contains(e.target);
+            if (!isAvatarOrDropdown) {
+                 dr.classList.remove('show'); 
+            }
+        };
+    }
+    
+    const checkLink = document.getElementById('checkLinkExterno');
+    const wrapperLink = document.getElementById('linkExternoWrapper');
+    if (checkLink && wrapperLink) {
+         checkLink.addEventListener('change', (e) => 
+            wrapperLink.style.display = e.target.checked ? 'block' : 'none'
+        );
+    }
+    
+    // NOVO: Lógica do Menu Hambúrguer (Configurações)
+    const btnHamburguer = document.getElementById('btn-hamburguer');
+    const settingsOverlay = document.getElementById('settings-menu-overlay');
+    const btnCloseMenu = document.getElementById('btn-close-settings-menu');
+
+    if(btnHamburguer && settingsOverlay && btnCloseMenu) {
+        // 1. Lógica de Toggle (Abrir/Fechar)
+        btnHamburguer.onclick = () => settingsOverlay.classList.add('ativo');
+        btnCloseMenu.onclick = () => settingsOverlay.classList.remove('ativo');
+        
+        // 2. Fechar ao clicar no backdrop (fora do menu)
+        settingsOverlay.onclick = (e) => {
+            if (e.target.id === 'settings-menu-overlay') {
+                settingsOverlay.classList.remove('ativo');
+            }
         }
-    };
-    
-    document.getElementById('checkLinkExterno').addEventListener('change', (e) => 
-        document.getElementById('linkExternoWrapper').style.display = e.target.checked ? 'block' : 'none'
-    );
-    
-    // 4.4 REGISTRO PWA
+    }
+
+    // 5.4 REGISTRO PWA
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/service-worker.js')

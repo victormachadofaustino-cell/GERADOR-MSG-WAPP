@@ -1,7 +1,7 @@
 // src/modules/settings.js
 
 // 1. IMPORTAÇÕES NECESSÁRIAS
-import { db, COLECOES } from '../services/firebase-api.js';
+import { INSTANCES, COLECOES } from '../services/firebase-api.js'; // CRÍTICO: Importa INSTANCES
 import * as DOM from './dom-elements.js';
 import { 
     showToast, 
@@ -28,6 +28,9 @@ let titulosDB = [];
 
 // 3. FUNÇÃO CORE: CARREGAR LISTAS DE CONFIGURAÇÃO (loadSettings)
 export async function loadSettings(key) {
+    const db = INSTANCES.db;
+    if (!db) return; // Garante que o DB está pronto
+
     if (!key) return;
     
     const cfg = CONFIG[key]; 
@@ -36,8 +39,10 @@ export async function loadSettings(key) {
     document.getElementById('settings-title').textContent = cfg.t;
     document.getElementById('btn-settings-add').textContent = `+ Novo ${cfg.t.slice(0, -1)}`; 
     
+    // Atualiza o menu de navegação (Tanto desktop quanto mobile)
     document.querySelectorAll('.settings-sidebar .nav-btn').forEach(b=>b.classList.remove('ativa'));
-    document.querySelector(`.settings-sidebar button[data-target="${key}"]`)?.classList.add('ativa');
+    document.querySelector(`#settings-sidebar-desktop button[data-target="${key}"]`)?.classList.add('ativa');
+    document.querySelector(`#settings-sidebar-nav button[data-target="${key}"]`)?.classList.add('ativa');
     
     DOM.settingsList.innerHTML = '<li>Carregando...</li>';
     
@@ -68,18 +73,24 @@ export async function loadSettings(key) {
             if(key === 'participantes') s = d.quantidade_media;
             if(key === 'titulos') s = d.titulo;
             
-            const li = document.createElement('li'); li.className='config-list-item';
-            // Novo atributo para permitir seleção de texto
-            li.setAttribute('draggable', 'true'); 
+            // CRIAÇÃO: Estrutura de Accordion
+            const li = document.createElement('li'); 
+            li.className = 'accordion-item';
+            li.dataset.id = d.id; 
             
             li.innerHTML = `
-                <div class="config-item-text">
-                    <span class="sigla">${p}</span>
-                    ${s?`<span class="titulo">${s}</span>`:''}
+                <div class="accordion-header">
+                    <div class="accordion-title">
+                        <span class="sigla">${p}</span>
+                        ${s?`<span class="titulo">${s}</span>`:''}
+                    </div>
+                    <span class="accordion-toggle-icon">▶</span>
                 </div>
-                <div class="config-item-actions">
-                    <button class="btn-edit btn-icon secundario" data-id="${d.id}" data-key="${key}">✏️</button>
-                    <button class="btn-delete btn-icon perigo" data-id="${d.id}" data-key="${key}">🗑️</button>
+                <div class="accordion-content">
+                    <div class="accordion-content-inner">
+                        <button class="btn-edit secundario" data-id="${d.id}" data-key="${key}">✏️ Editar</button>
+                        <button class="btn-delete perigo" data-id="${d.id}" data-key="${key}">🗑️ Excluir</button>
+                    </div>
                 </div>`;
             DOM.settingsList.appendChild(li);
         });
@@ -90,8 +101,11 @@ export async function loadSettings(key) {
 }
 
 
-// 4. LÓGICA DO MODAL: ADICIONAR ITEM (btn-settings-add)
+// 4. LÓGICA DO MODAL: ADICIONAR ITEM - Mantida
 async function handleAdd(k) {
+    const db = INSTANCES.db;
+    if (!db) return; // Garante que o DB está pronto
+
     if(k === 'comuns') {
         let opts = ''; 
         if (cidadesDB.length === 0) return showToast("Carregue as cidades primeiro (navegue para Cidades).", true);
@@ -113,7 +127,7 @@ async function handleAdd(k) {
     } else if(k === 'titulos') {
          showConfigModal('Novo Título', c => c.innerHTML = `
             <div class="form-group"><label>Sigla</label><input id="f0"></div>
-            <div class="form-group"><label>Título</label><textarea id="f1" rows="3"></textarea></div>`, // Ajustado para textarea
+            <div class="form-group"><label>Título</label><textarea id="f1" rows="3"></textarea></div>`, 
         async () => {
             try {
                 await db.collection(COLECOES.eventos_titulos).add({
@@ -150,8 +164,11 @@ async function handleAdd(k) {
 }
 
 
-// 5. LÓGICA DO MODAL: EDITAR E EXCLUIR ITEM
+// 5. LÓGICA DO MODAL: EDITAR E EXCLUIR ITEM - Mantida
 async function handleEditDelete(b, k, id) {
+    const db = INSTANCES.db;
+    if (!db) return; // Garante que o DB está pronto
+    
     if(b.classList.contains('btn-delete')) {
         showDeleteModal("Item", async () => { 
             try {
@@ -171,7 +188,6 @@ async function handleEditDelete(b, k, id) {
         let h = `<div class="form-group"><label>Nome / Sigla / Grupo</label><input id="ed0" value="${d.nome||d.grupo||d.sigla}"></div>`;
         
         if(k === 'titulos') {
-            // AQUI: Usando textarea para maior conforto e rows=5 para aumentar o espaço
             h += `<div class="form-group"><label>Titulo Extenso</label><textarea id="ed1" rows="5">${d.titulo}</textarea></div>`;
         }
         if(k === 'participantes') {
@@ -202,11 +218,14 @@ export function initSettingsListeners(cidadesData, titulosData) {
     cidadesDB = cidadesData; 
     titulosDB = titulosData;
 
-    // Listener: Sidebar Clicks (Mudar de categoria)
-    document.querySelector('.settings-sidebar').addEventListener('click', e => { 
-        const b = e.target.closest('.nav-btn'); 
-        if(b) loadSettings(b.dataset.target); 
-    });
+    // Listener: Sidebar Clicks (Mudar de categoria) - DESKTOP
+    const desktopSidebar = document.getElementById('settings-sidebar-desktop');
+    if (desktopSidebar) {
+        desktopSidebar.addEventListener('click', e => { 
+            const b = e.target.closest('.nav-btn'); 
+            if(b) loadSettings(b.dataset.target); 
+        });
+    }
     
     // Listener: Botão Adicionar Item
     document.getElementById('btn-settings-add').onclick = () => {
@@ -215,14 +234,50 @@ export function initSettingsListeners(cidadesData, titulosData) {
         handleAdd(k);
     };
 
-    // Listener: Botões Editar/Excluir na Lista
+    // Listener: Accordion Toggle e Botões
     DOM.settingsList.addEventListener('click', async (e) => {
-        const b = e.target.closest('button'); 
-        if(!b) return; // Garante que só processa cliques em botões
+        const header = e.target.closest('.accordion-header');
+        const btn = e.target.closest('button');
         
-        const k = b.dataset.key; 
-        const id = b.dataset.id;
+        if (header && !btn) { 
+            const item = header.closest('.accordion-item');
+            const content = item.querySelector('.accordion-content');
+            
+            // Fecha todos os outros (exceto o clicado)
+            document.querySelectorAll('.accordion-item.ativa').forEach(otherItem => {
+                if (otherItem !== item) {
+                    otherItem.classList.remove('ativa');
+                    otherItem.querySelector('.accordion-content').style.maxHeight = 0;
+                }
+            });
+
+            // Toggle do item clicado
+            const is_active = item.classList.toggle('ativa');
+            if (is_active) {
+                content.style.maxHeight = content.scrollHeight + 2 + "px"; 
+            } else {
+                content.style.maxHeight = 0;
+            }
+        }
         
-        handleEditDelete(b, k, id);
+        // Listener: Botões Editar/Excluir (Eles estão dentro do Accordion Content)
+        if(btn && (btn.classList.contains('btn-edit') || btn.classList.contains('btn-delete'))) { 
+            const k = btn.dataset.key; 
+            const id = btn.dataset.id;
+            
+            handleEditDelete(btn, k, id);
+        }
     });
+    
+    // Listener para o menu mobile (Hamburger Menu)
+    const mobileSidebar = document.getElementById('settings-sidebar-nav');
+    if (mobileSidebar) {
+        mobileSidebar.addEventListener('click', e => { 
+            const b = e.target.closest('.nav-btn'); 
+            if(b) {
+                loadSettings(b.dataset.target); 
+                document.getElementById('settings-menu-overlay').classList.remove('ativo'); // Fecha o menu
+            }
+        });
+    }
 }

@@ -1,7 +1,7 @@
 // src/services/firebase-api.js
 
 // --- CONFIGURAÇÃO FIREBASE ---
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyCADgdZJ45YtaRsPzPFGpQCFz5fOoTF5kI",
   authDomain: "gerador-msg-wapp.firebaseapp.com",
   projectId: "gerador-msg-wapp",
@@ -10,13 +10,16 @@ const firebaseConfig = {
   appId: "1:879738577541:web:bf90d416f52e12b1d97fec"
 };
 
-// --- INICIALIZAÇÃO ---
-// A inicialização deve ocorrer aqui
-firebase.initializeApp(firebaseConfig);
-
-// Exporta as instâncias de Auth e Firestore para uso em outros módulos
-export const db = firebase.firestore();
-export const auth = firebase.auth();
+// CRÍTICO: Objeto Mutável para armazenar as instâncias
+export const INSTANCES = {
+    db: null,
+    auth: null,
+    // Garante que outros módulos (como events.js) podem acessar o DB
+    get db() { return INSTANCES._db; },
+    set db(val) { INSTANCES._db = val; },
+    get auth() { return INSTANCES._auth; },
+    set auth(val) { INSTANCES._auth = val; }
+};
 
 // --- CONSTANTES ---
 // Exporta as constantes de Coleções
