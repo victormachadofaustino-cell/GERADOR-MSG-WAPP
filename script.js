@@ -502,4 +502,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const av=document.getElementById('profile-avatar-btn'), dr=document.getElementById('profile-dropdown');
     av.onclick=()=>dr.classList.toggle('show'); window.onclick=(e)=>{if(!av.contains(e.target)&&!dr.contains(e.target))dr.classList.remove('show')};
     document.getElementById('checkLinkExterno').addEventListener('change', (e) => document.getElementById('linkExternoWrapper').style.display = e.target.checked ? 'block' : 'none');
-});
+
+// --- REGISTRO PWA (NOVO) ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(registration => {
+                    console.log('SW registrado com sucesso:', registration.scope);
+                })
+                .catch(err => {
+                    console.log('Falha no registro do SW:', err);
+                });
+        });
+    }
+}); // ESTE CHAVE DEVE SER A ÚLTIMA LINHA DO ARQUIVO
