@@ -161,12 +161,83 @@ button.btn-icon { flex: 0 0 auto; padding: 8px 12px; }
 .modal-body { padding: 20px; max-height: 70vh; overflow-y: auto; }
 .modal-footer { padding: 15px 20px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px; background: var(--fundo-elemento); border-radius: 0 0 12px 12px; }
 
-/* --- LOGIN --- */
-#login-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: var(--fundo-pagina); }
-.login-box { width: 90%; max-width: 380px; padding: 40px; background: var(--fundo-elemento); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-.password-wrapper { position: relative; }
-#toggle-password { position: absolute; top: 38px; right: 5px; background: none; border: none; cursor: pointer; color: #777; }
-.login-links { text-align: right; margin-top: 15px; font-size: 0.9em; }
+/* --- LOGIN (Modernizado) --- */
+#login-container { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    height: 100vh; 
+    background: var(--fundo-pagina); 
+    padding: 20px;
+}
+.login-box { 
+    width: 100%; /* Ocupa 100% da largura em mobile */
+    max-width: 400px; /* Um pouco mais largo que antes */
+    padding: 30px; 
+    background: white; 
+    border-radius: 12px; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1); /* Sombra mais suave */
+}
+
+/* Título e Subtítulo */
+.login-box h2 {
+    border-bottom: none; 
+    padding-bottom: 0; 
+    margin-bottom: 5px; 
+    color: #333; 
+    font-size: 1.8em;
+    text-align: center;
+}
+.login-box p {
+    margin-bottom: 25px;
+    color: #777;
+}
+
+/* Wrapper da Senha e Botão de Toggle */
+.password-wrapper { 
+    position: relative; 
+}
+
+#toggle-password { 
+    position: absolute; 
+    top: 50%; /* Centraliza verticalmente */
+    right: 1px; 
+    transform: translateY(-50%);
+    background: none; 
+    border: none; 
+    cursor: pointer; 
+    color: #777; 
+    padding: 10px; /* Aumenta a área de toque */
+    height: auto; /* Remove a altura mínima forçada pelos botões gerais */
+    min-height: 0; 
+}
+
+/* Ajusta o padding para que o ícone não toque no texto */
+.password-wrapper input {
+    padding-right: 40px; 
+}
+
+/* Botão Entrar (Usa o estilo padrão, mas garante largura total) */
+.login-box button[type="submit"] {
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px;
+}
+
+/* Links (Esqueceu a Senha) */
+.login-links { 
+    text-align: right; 
+    margin-top: 15px; 
+    font-size: 0.9em; 
+}
+.login-links a {
+    color: var(--cor-primaria);
+    text-decoration: none;
+}
+.login-links a:hover {
+    text-decoration: underline;
+}
 
 /* --- MÓDULO 3 (SIDEBAR) --- */
 .settings-layout { display: flex; background: var(--fundo-elemento); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); min-height: 600px; border: 1px solid #eee; }
