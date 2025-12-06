@@ -18,6 +18,7 @@ const errorMessage = document.getElementById('error-message');
 const loadingOverlay = document.getElementById('loading-overlay');
 const eventsList = document.getElementById('events-list');
 const filterChips = document.querySelectorAll('.filter-chip');
+const addEventButton = document.getElementById('add-event-button');
 
 // Estado em memória
 let allEvents = [];
@@ -84,6 +85,26 @@ function formatMonthYear(date) {
     });
 }
 
+function getWeekdayName(date) {
+    const weekdays = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+    return weekdays[date.getDay()];
+}
+
+function getWeekOfMonth(date) {
+    const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+    const dayOfMonth = date.getDate();
+    const weekNumber = Math.ceil((dayOfMonth + firstDay.getDay()) / 7);
+    
+    const ordinals = ['', '1º', '2º', '3º', '4º', '5º'];
+    return ordinals[weekNumber] || weekNumber + 'º';
+}
+
+function formatDateDescription(date) {
+    const weekOfMonth = getWeekOfMonth(date);
+    const weekday = getWeekdayName(date);
+    return `${weekOfMonth} ${weekday}`;
+}
+
 function normalizeString(str) {
     return (str || '').toLowerCase();
 }
@@ -119,6 +140,7 @@ async function loadEvents() {
                 comum_nome: data.comum_nome || '',
                 tipo_evento_nome: data.tipo_evento_nome || '',
                 titulo_nome: data.titulo_nome || '',
+                sigla: data.sigla || '',
                 raw: data
             });
         });
@@ -219,14 +241,45 @@ function createEventCard(ev) {
     card.className = 'card event-card';
     card.dataset.eventId = ev.id;
 
-    const dateLabel = ev.data ? formatDateTime(ev.data) : 'Data não definida';
-    const titleLabel = ev.titulo_nome || ev.tipo_evento_nome || 'Evento';
+    const isEnsaio = normalizeString(ev.tipo_evento_nome).includes('ensaio');
+    const isReuniao = normalizeString(ev.tipo_evento_nome).includes('reuni');
+
+    let titleLine = '';
+    let subtitleLine = '';
+
+    if (isEnsaio) {
+        // Ensaio Regional - Cidade
+        titleLine = `${ev.titulo_nome || ev.tipo_evento_nome} - ${ev.cidade_nome || '—'}`;
+        // Data - Descrição da data (3º Domingo)
+        if (ev.data) {
+            subtitleLine = `${formatDate(ev.data)} - ${formatDateDescription(ev.data)}`;
+        } else {
+            subtitleLine = 'Data não definida';
+        }
+    } else if (isReuniao) {
+        // Sigla - Reunião
+        titleLine = `${ev.sigla || '—'} - ${ev.tipo_evento_nome}`;
+        // Data - Descrição da data (Quarta quarta-feira)
+        if (ev.data) {
+            subtitleLine = `${formatDate(ev.data)} - ${formatDateDescription(ev.data)}`;
+        } else {
+            subtitleLine = 'Data não definida';
+        }
+    } else {
+        // Outros eventos
+        titleLine = ev.titulo_nome || ev.tipo_evento_nome || 'Evento';
+        if (ev.data) {
+            subtitleLine = `${formatDate(ev.data)} - ${formatDateDescription(ev.data)}`;
+        } else {
+            subtitleLine = 'Data não definida';
+        }
+    }
 
     card.innerHTML = `
         <div class="event-card-header">
             <div class="event-main-info">
-                <div class="event-title">${titleLabel}</div>
-                <div class="event-date">${dateLabel}</div>
+                <div class="event-title">${titleLine}</div>
+                <div class="event-date">${subtitleLine}</div>
             </div>
             <div class="event-type-badge">
                 ${ev.tipo_evento_nome || '—'}
@@ -237,6 +290,8 @@ function createEventCard(ev) {
             <p><strong>Cidade:</strong> ${ev.cidade_nome || '—'}</p>
             <p><strong>Comum:</strong> ${ev.comum_nome || '—'}</p>
             ${ev.titulo_nome ? `<p><strong>Título:</strong> ${ev.titulo_nome}</p>` : ''}
+            ${ev.sigla ? `<p><strong>Sigla:</strong> ${ev.sigla}</p>` : ''}
+            ${ev.data ? `<p><strong>Data/Hora:</strong> ${formatDateTime(ev.data)}</p>` : ''}
             <div class="card-actions" style="margin-top: 12px;">
                 <button class="icon-button" onclick="editEvent('${ev.id}'); event.stopPropagation();">
                     <span class="material-icons">edit</span>
@@ -263,12 +318,158 @@ function createEventCard(ev) {
     return card;
 }
 
-// --- Placeholder functions for edit/delete (CRUD virá depois) ---
-function editEvent(eventId) {
-    console.log('✏️ Editar evento:', eventId);
-    alert('Função de edição será implementada em breve.');
+// --- Modal para adicionar/editar evento ---
+function showEventModal(eventId = null) {
+    const isEdit = !!eventId;
+    const modalTitle = isEdit ? 'Editar Evento' : 'Novo Evento';
+    
+    // Criar modal
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>${modalTitle}</h2>
+                <button class="icon-button modal-close">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <form id="event-form" class="modal-form">
+                <div class="form-group">
+                    <label for="event-tipo">Tipo de Evento *</label>
+                    <input type="text" id="event-tipo" required placeholder="Ex: Reunião Regional Ministerial">
+                </div>
+                
+                <div class="form-group">
+                    <label for="event-titulo">Título</label>
+                    <input type="text" id="event-titulo" placeholder="Ex: Ensaio Regional">
+                </div>
+                
+                <div class="form-group">
+                    <label for="event-sigla">Sigla</label>
+                    <input type="text" id="event-sigla" placeholder="Ex: RRM">
+                </div>
+                
+                <div class="form-group">
+                    <label for="event-cidade">Cidade *</label>
+                    <input type="text" id="event-cidade" required placeholder="Ex: São Paulo">
+                </div>
+                
+                <div class="form-group">
+                    <label for="event-comum">Comum</label>
+                    <input type="text" id="event-comum" placeholder="Ex: Comum Central">
+                </div>
+                
+                <div class="form-group">
+                    <label for="event-data">Data e Hora *</label>
+                    <input type="datetime-local" id="event-data" required>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="button secondary-button modal-cancel">Cancelar</button>
+                    <button type="submit" class="button primary-button">${isEdit ? 'Salvar' : 'Criar'}</button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Event listeners
+    const closeBtn = modal.querySelector('.modal-close');
+    const cancelBtn = modal.querySelector('.modal-cancel');
+    const form = modal.querySelector('#event-form');
+    
+    const closeModal = () => {
+        modal.remove();
+    };
+    
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    
+    // Se for edição, carregar dados
+    if (isEdit) {
+        loadEventData(eventId, form);
+    }
+    
+    // Submit do formulário
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await saveEvent(eventId, form);
+        closeModal();
+    });
 }
 
+async function loadEventData(eventId, form) {
+    showLoading();
+    try {
+        const doc = await db.collection('eventos').doc(eventId).get();
+        if (doc.exists) {
+            const data = doc.data();
+            
+            form.querySelector('#event-tipo').value = data.tipo_evento_nome || '';
+            form.querySelector('#event-titulo').value = data.titulo_nome || '';
+            form.querySelector('#event-sigla').value = data.sigla || '';
+            form.querySelector('#event-cidade').value = data.cidade_nome || '';
+            form.querySelector('#event-comum').value = data.comum_nome || '';
+            
+            if (data.data_hora && data.data_hora.toDate) {
+                const date = data.data_hora.toDate();
+                const dateString = date.toISOString().slice(0, 16);
+                form.querySelector('#event-data').value = dateString;
+            }
+        }
+    } catch (error) {
+        console.error('❌ Erro ao carregar evento:', error);
+        alert('Erro ao carregar dados do evento.');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function saveEvent(eventId, form) {
+    showLoading();
+    
+    const eventData = {
+        tipo_evento_nome: form.querySelector('#event-tipo').value.trim(),
+        titulo_nome: form.querySelector('#event-titulo').value.trim(),
+        sigla: form.querySelector('#event-sigla').value.trim(),
+        cidade_nome: form.querySelector('#event-cidade').value.trim(),
+        comum_nome: form.querySelector('#event-comum').value.trim(),
+        data_hora: firebase.firestore.Timestamp.fromDate(new Date(form.querySelector('#event-data').value))
+    };
+    
+    try {
+        if (eventId) {
+            // Atualizar evento existente
+            await db.collection('eventos').doc(eventId).update(eventData);
+            console.log('✅ Evento atualizado:', eventId);
+        } else {
+            // Criar novo evento
+            const docRef = await db.collection('eventos').add(eventData);
+            console.log('✅ Novo evento criado:', docRef.id);
+        }
+        
+        // Recarregar lista
+        await loadEvents();
+    } catch (error) {
+        console.error('❌ Erro ao salvar evento:', error);
+        alert('Erro ao salvar evento: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+// --- Editar evento ---
+function editEvent(eventId) {
+    console.log('✏️ Editar evento:', eventId);
+    showEventModal(eventId);
+}
+
+// --- Deletar evento ---
 function deleteEvent(eventId) {
     if (confirm('Tem certeza que deseja excluir este evento?')) {
         showLoading();
@@ -370,6 +571,13 @@ filterChips.forEach(chip => {
         renderFilteredEvents();
     });
 });
+
+// --- Botão adicionar evento ---
+if (addEventButton) {
+    addEventButton.addEventListener('click', () => {
+        showEventModal();
+    });
+}
 
 // Initial load state
 showLoading();
