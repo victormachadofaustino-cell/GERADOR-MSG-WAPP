@@ -1,7 +1,7 @@
 // src/modules/events.js
 
 // 1. IMPORTAÇÕES NECESSÁRIAS
-import { INSTANCES, COLECOES } from '../services/firebase-api.js'; // CRÍTICO: Importa INSTANCES
+import { INSTANCES, COLECOES } from '../services/firebase.js'; // CRÍTICO: Importa INSTANCES
 import * as DOM from './dom-elements.js';
 import * as Helpers from '../services/helpers.js'; 
 import { gerarSnippetBotao } from './generator.js'; 
