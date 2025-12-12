@@ -2,7 +2,7 @@
   "name": "Gerador de Agenda Wapp",
   "short_name": "AgendaWapp",
   "description": "Gerenciador e Gerador de Mensagens de Agenda para WhatsApp.",
-  "start_url": "/index.html",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#f8f9fa",
   "theme_color": "#1A73E8",
