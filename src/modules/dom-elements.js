@@ -1,53 +1,112 @@
 // src/modules/dom-elements.js
 
-// --- ELEMENTOS GERAIS DE ESTRUTURA E AUTENTICAÇÃO ---
-export const toast = document.getElementById('toast-notification');
+// ===============================
+// CONTAINERS PRINCIPAIS
+// ===============================
 export const loginContainer = document.getElementById('login-container');
 export const appContainer = document.getElementById('app-container');
+
+// ===============================
+// AUTENTICAÇÃO
+// ===============================
 export const loginForm = document.getElementById('login-form');
-export const userDisplay = document.getElementById('user-display');
-// CORRIGIDO: O ID correto no HTML é 'last-login-display'
-export const lastLoginDisplay = document.getElementById('last-login-display'); 
-export const navButtons = document.querySelectorAll('nav button');
-export const paginas = document.querySelectorAll('.pagina');
+export const loginEmail = document.getElementById('login-email');
+export const loginPassword = document.getElementById('login-senha');
+
+// ✅ Agora o logout fica dentro do menu
+export const logoutButton = document.getElementById('btn-logout');
+
+// ✅ Perfil/menu
+export const profileButton = document.getElementById('btn-profile');
+export const profileMenu = document.getElementById('profile-menu');
+
+// ===============================
+// NAVEGAÇÃO
+// ===============================
+export const navItems = document.querySelectorAll('.footer-nav-item');
+export const pages = document.querySelectorAll('.app-page');
+
+// ===============================
+// PÁGINA: EVENTOS
+// ===============================
+export const btnNovoEvento = document.getElementById('btn-novo-evento');
+export const listaEventos = document.getElementById('lista-eventos');
+export const eventFilterBtns = document.querySelectorAll('.event-filter-btn');
+
+// ===============================
+// MODAL: TIPO DE EVENTO
+// ===============================
+export const modalTipoEvento = document.getElementById('modal-tipo-evento');
+export const tipoButtons = document.querySelectorAll('.tipo-btn');
+
+// ===============================
+// MODAL: FORM DE EVENTO
+// ===============================
+export const eventoFormContainer = document.getElementById('evento-form-container');
+export const eventoModalTitle = document.getElementById('evento-modal-title');
+export const formEvento = document.getElementById('form-evento');
+export const btnCancelarEventoForm = document.getElementById('btn-cancelar-evento-form');
+
+// Campos do formulário de evento
+export const eventoCidade = document.getElementById('evento-cidade');
+export const eventoComum = document.getElementById('evento-comum');
+export const eventoData = document.getElementById('evento-data');
+export const eventoHora = document.getElementById('evento-hora');
+export const eventoDescData = document.getElementById('evento-desc-data');
+export const eventoObservacoes = document.getElementById('evento-observacoes');
+export const eventoTitulo = document.getElementById('evento-titulo');
+export const eventoRealizacao = document.getElementById('evento-realizacao');
+export const eventoPublicoQtd = document.getElementById('evento-publico-qtd');
+export const eventoLink = document.getElementById('evento-link');
+export const eventoPublicosCheckboxes = document.getElementById('evento-publicos-checkboxes');
+export const eventoCancelado = document.getElementById('evento-cancelado');
+export const eventoExtra = document.getElementById('evento-extra');
+
+// Containers de campos específicos
+export const campoTituloContainer = document.getElementById('campo-titulo-container');
+export const campoRealizacaoContainer = document.getElementById('campo-realizacao-container');
+export const campoPublicoQtdContainer = document.getElementById('campo-publico-qtd-container');
+export const campoLinkContainer = document.getElementById('campo-link-container');
+export const campoPublicoContainer = document.getElementById('campo-publico-container');
+export const flagExtraContainer = document.getElementById('flag-extra-container');
+
+// ===============================
+// PÁGINA: GERADOR
+// ===============================
+export const mesAnoRef = document.getElementById('mes-ano-ref');
+export const selectPublicoGerador = document.getElementById('select-publico-gerador');
+export const btnGerarMensagem = document.getElementById('btn-gerar-mensagem');
+export const mensagemGerada = document.getElementById('mensagem-gerada');
+export const btnCopiarMensagem = document.getElementById('btn-copiar-mensagem');
+
+// ✅ NOVO: limpar mensagem
+export const btnLimparMensagem = document.getElementById('btn-limpar-mensagem');
+
+// ===============================
+// PÁGINA: TEMPLATES
+// ===============================
+export const btnNovoTemplate = document.getElementById('btn-novo-template');
+export const listaTemplates = document.getElementById('lista-templates');
+
+// Modal de template
+export const templateFormContainer = document.getElementById('template-form-container');
+export const templateModalTitle = document.getElementById('template-modal-title');
+export const formTemplate = document.getElementById('form-template');
+export const btnCancelarTemplate = document.getElementById('btn-cancelar-template');
+
+export const templateNome = document.getElementById('template-nome');
+export const templateTipo = document.getElementById('template-tipo');
+export const templateConteudo = document.getElementById('template-conteudo');
+
+// ===============================
+// PÁGINA: CONFIGURAÇÕES
+// ===============================
+export const settingsTitle = document.getElementById('settings-title');
+export const btnSettingsAdd = document.getElementById('btn-settings-add');
 export const settingsList = document.getElementById('settings-list');
+export const settingsNavBtns = document.querySelectorAll('.settings-nav-btn');
 
-
-// --- ELEMENTOS DO FORMULÁRIO DE EVENTOS (Gestão) ---
-export const formEvento = document.getElementById('formEvento');
-export const inpData = document.getElementById('data'); 
-export const inpHora = document.getElementById('hora'); 
-export const inpDescData = document.getElementById('desc_data');
-export const selTipo = document.getElementById('select_tipo_evento');
-export const selSigla = document.getElementById('select_titulo');
-export const inpTitulo = document.getElementById('titulo');
-export const selParticipantes = document.getElementById('select_participantes');
-// CORRIGIDO: O ID de quantidade é 'quantidade', não 'observacoes'
-export const inpQtd = document.getElementById('quantidade'); 
-export const selCidade = document.getElementById('select_cidade');
-export const selComum = document.getElementById('select_comum');
-
-// Elementos para controle de visibilidade (groups) - Otimizado para os IDs corretos no HTML
-export const allGroups = [
-    document.getElementById('form-group-sigla'), document.getElementById('form-group-titulo'),
-    document.getElementById('form-group-publico'), document.getElementById('form-group-quantidade'),
-    // Note que form-group-is_extra não existe no HTML, mas existe form-group-observacoes_extra
-    document.getElementById('form-group-realizacao'), document.getElementById('form-group-observacoes_extra')
-];
-
-
-// --- ELEMENTOS DO GERADOR DE MENSAGENS (IDs do HTML) ---
-export const resultado = document.getElementById('resultado');
-// CORRIGIDO: Mapeando os IDs reais do index.html
-export const mesAnoRef = document.getElementById('mes_ano_ref');
-export const selectPublicoGerador = document.getElementById('select_publico');
-export const selectTemplateGerador = document.getElementById('select_template');
-export const btnGerar = document.getElementById('btnGerar');
-
-
-// --- ELEMENTOS DO MODAL (BOTOES QUE ACIONAM FUNÇÕES) ---
-// Estes elementos podem ser necessários em diversos módulos
-export const btnModalSalvar = document.getElementById('modal-btn-salvar');
-export const btnModalCancelar = document.getElementById('modal-btn-cancelar');
-export const btnDeleteModalConfirmar = document.getElementById('delete-modal-btn-confirmar');
-export const btnDeleteModalCancelar = document.getElementById('delete-modal-btn-cancelar');
+// ===============================
+// TOAST
+// ===============================
+export const toast = document.getElementById('toast');

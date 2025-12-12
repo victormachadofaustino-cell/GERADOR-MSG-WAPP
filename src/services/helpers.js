@@ -1,148 +1,235 @@
 // src/services/helpers.js
 
-const configModal = document.getElementById('config-modal');
-const deleteModal = document.getElementById('delete-modal');
-const modalBackdrop = document.getElementById('modal-backdrop');
-
-let modalOnSave = null;
-let deleteModalOnConfirm = null;
-
-// Constantes de data: Mês Curto Adicionado
-const nomesDias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-const nomesMeses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-
-
-// --- FUNÇÕES DE DATA E HORA (NOVAS EXPORTAÇÕES) ---
-export function formatarDataHora(dataHoraString) {
-    if (!dataHoraString) return {};
-    const dt = new Date(dataHoraString);
-    
-    if (isNaN(dt.getTime())) {
-        const parts = dataHoraString.split('T');
-        if (parts.length === 2) {
-            const dateUTC = new Date(parts[0] + 'T' + parts[1] + ':00Z');
-            if (!isNaN(dateUTC.getTime())) {
-                dt.setTime(dateUTC.getTime());
-            } else {
-                 return {};
-            }
-        } else {
-             return {};
-        }
-    }
-
-    const dia = dt.getDate().toString().padStart(2, '0');
-    const mes = (dt.getMonth() + 1).toString().padStart(2, '0');
-    const ano = dt.getFullYear();
-    
-    return {
-        data: `${dia}/${mes}`, // Ex: 25/03
-        hora: `${dt.getHours().toString().padStart(2, '0')}:${dt.getMinutes().toString().padStart(2, '0')}`, // Ex: 19:30
-        diaSemana: nomesDias[dt.getDay()],
-        mesCurto: nomesMeses[dt.getMonth()], // <<-- CORRIGIDO
-        dataExtenso: `${nomesDias[dt.getDay()]}, ${dia} de ${nomesMeses[dt.getMonth()]} de ${ano}`
-    };
-}
-
-export function calcularDescricaoData(date) {
-    const dia = date.getDate();
-    const diaSemana = date.getDay(); 
-    const mes = date.getMonth();
-    const ano = date.getFullYear();
-    
-    const semanaDoMes = Math.floor((dia - 1) / 7) + 1;
-    let desc = `${semanaDoMes}ª Semana`;
-    
-    const ultimoDiaDoMes = new Date(ano, mes + 1, 0).getDate();
-    if (dia > ultimoDiaDoMes - 7) {
-        desc = 'Última Semana';
-    }
-    
-    if (diaSemana === 0 && (semanaDoMes === 4 || semanaDoMes === 5)) {
-        if (dia + 7 > ultimoDiaDoMes) {
-             desc = 'Último Domingo';
-        }
-    }
-
-    return desc;
-}
-
-
-// --- FUNÇÕES DE CONTROLE DE TOAST ---
+// ========== TOAST ==========
 export function showToast(message, isError = false) {
-    const toast = document.getElementById('toast-notification');
-    if (!toast) return;
+  const toast = document.getElementById('toast');
+  if (!toast) return;
 
-    toast.textContent = message;
-    toast.classList.remove('show', 'error');
-    if (isError) {
-        toast.classList.add('error');
-    }
-    
-    void toast.offsetWidth; 
+  toast.textContent = message;
+  toast.className = `toast ${isError ? 'error' : ''}`;
+  toast.classList.remove('hidden');
 
-    toast.classList.add('show');
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3000);
+  setTimeout(() => {
+    toast.classList.add('hidden');
+  }, 3000);
 }
 
+// ========== MODAL CONFIG (PADRÃO PARA + NOVO / EDITAR) ==========
+export function showConfigModal(title, renderContent, onConfirm) {
+  const modalId = 'modal-config-temp';
+  let existingModal = document.getElementById(modalId);
+  
+  if (existingModal) {
+    document.body.removeChild(existingModal);
+  }
 
-// --- FUNÇÕES DE CONTROLE DE MODAL ---
+  const modal = document.createElement('div');
+  modal.id = modalId;
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-config-title">${title}</h3>
+      </div>
+      <div class="modal-body">
+        <div id="modal-config-body"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn secundario" id="btn-cancelar-config">Cancelar</button>
+        <button type="button" class="btn primario" id="btn-confirmar-config">Salvar</button>
+      </div>
+    </div>
+  `;
 
-export function showConfigModal(title, contentRenderer, onSaveFunction) {
-    if (!configModal || !modalBackdrop) return showToast("Erro: Elementos do modal não encontrados.", true);
-    
-    const modalBody = document.getElementById('modal-body');
-    const modalTitle = document.getElementById('modal-title');
-    
-    modalTitle.textContent = title;
-    
-    modalBody.innerHTML = ''; 
-    contentRenderer(modalBody);
-    
-    modalOnSave = onSaveFunction;
-    
-    modalBackdrop.style.display = 'block';
-    configModal.style.display = 'block';
+  document.body.appendChild(modal);
+  document.body.classList.add('modal-open');
+
+  const body = document.getElementById('modal-config-body');
+  if (renderContent && typeof renderContent === 'function') {
+    renderContent(body);
+  }
+
+  document.getElementById('btn-cancelar-config').onclick = () => {
+    hideConfigModal();
+  };
+
+  document.getElementById('btn-confirmar-config').onclick = () => {
+    if (onConfirm && typeof onConfirm === 'function') {
+      onConfirm();
+    }
+  };
+
+  modal.addEventListener('click', e => {
+    if (e.target === modal) {
+      hideConfigModal();
+    }
+  });
+
+  window.__configModalCallbacks = { onConfirm };
 }
 
 export function hideConfigModal() {
-    if (!configModal || !modalBackdrop) return;
-    configModal.style.display = 'none';
-    modalBackdrop.style.display = 'none';
-    modalOnSave = null; 
+  const modal = document.getElementById('modal-config-temp');
+  if (modal) {
+    document.body.removeChild(modal);
+    document.body.classList.remove('modal-open');
+  }
+  if (window.__configModalCallbacks) {
+    delete window.__configModalCallbacks;
+  }
 }
 
-export function showDeleteModal(itemType, onConfirmFunction) {
-    if (!deleteModal || !modalBackdrop) return;
-    
-    document.getElementById('delete-modal-body').innerHTML = `<p>Tem certeza que deseja excluir este ${itemType}? Esta ação não pode ser desfeita.</p>`;
-    
-    deleteModalOnConfirm = onConfirmFunction;
-    
-    modalBackdrop.style.display = 'block';
-    deleteModal.style.display = 'block';
+// ========== MODAL DELETE (PADRÃO PARA EXCLUIR) ==========
+export function showDeleteModal(itemName, onConfirm) {
+  const modalId = 'modal-delete-temp';
+  let existingModal = document.getElementById(modalId);
+  
+  if (existingModal) {
+    document.body.removeChild(existingModal);
+  }
+
+  const modal = document.createElement('div');
+  modal.id = modalId;
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 360px; text-align: center;">
+      <div class="modal-header">
+        <h3>Confirmar exclusão</h3>
+      </div>
+      <div class="modal-body">
+        <p style="margin: 16px 0;">Tem certeza que deseja excluir este <strong>${itemName}</strong>?</p>
+      </div>
+      <div class="modal-footer" style="justify-content: center;">
+        <button class="btn secundario" id="btn-cancelar-delete">Cancelar</button>
+        <button class="btn perigo" id="btn-confirmar-delete">Excluir</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  document.body.classList.add('modal-open');
+
+  document.getElementById('btn-cancelar-delete').onclick = () => {
+    hideDeleteModal();
+  };
+
+  document.getElementById('btn-confirmar-delete').onclick = () => {
+    if (onConfirm && typeof onConfirm === 'function') {
+      onConfirm();
+    }
+  };
+
+  modal.addEventListener('click', e => {
+    if (e.target === modal) {
+      hideDeleteModal();
+    }
+  });
+
+  window.__deleteModalCallback = onConfirm;
 }
 
 export function hideDeleteModal() {
-    if (!deleteModal || !modalBackdrop) return;
-    deleteModal.style.display = 'none';
-    modalBackdrop.style.display = 'none';
-    deleteModalOnConfirm = null; 
+  const modal = document.getElementById('modal-delete-temp');
+  if (modal) {
+    document.body.removeChild(modal);
+    document.body.classList.remove('modal-open');
+  }
+  if (window.__deleteModalCallback) {
+    delete window.__deleteModalCallback;
+  }
 }
 
+// ========== GERENCIAMENTO DE DOM (para compatibilidade futura) ==========
+export function getElement(id) {
+  return document.getElementById(id);
+}
 
-// --- EXPORT: Inicialização dos Listeners de Modal ---
-export function initModalListeners() {
-    const btnSalvar = document.getElementById('modal-btn-salvar');
-    const btnCancelar = document.getElementById('modal-btn-cancelar');
-    const btnDelConfirmar = document.getElementById('delete-modal-btn-confirmar');
-    const btnDelCancelar = document.getElementById('delete-modal-btn-cancelar');
-    
-    if (btnSalvar) btnSalvar.onclick = () => { if(modalOnSave) modalOnSave(); };
-    if (btnCancelar) btnCancelar.onclick = hideConfigModal;
-    if (btnDelConfirmar) btnDelConfirmar.onclick = () => { if(deleteModalOnConfirm) deleteModalOnConfirm(); };
-    if (btnDelCancelar) btnDelCancelar.onclick = hideDeleteModal;
+export function addClass(el, className) {
+  if (el) el.classList.add(className);
+}
+
+export function removeClass(el, className) {
+  if (el) el.classList.remove(className);
+}
+
+// ========== FORMATAR DATA (usado em outros módulos) ==========
+export function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const date = new Date(dateStr + 'T00:00:00');
+  return date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+}
+
+// ========== FORMATAR DATA E HORA (usado em generator.js e events.js) ==========
+/**
+ * Formata data e hora no padrão brasileiro
+ * Aceita tanto formato ISO completo ("2025-12-05T19:30:00") quanto separado (data, hora)
+ * @param {string} dataHoraISO - Data/hora no formato ISO ou data no formato YYYY-MM-DD
+ * @param {string} [timeStr] - Hora no formato HH:MM (opcional, se não vier no primeiro parâmetro)
+ * @returns {object} - { data: "05/12/2025", hora: "19:30", diaSemana: "Quinta-feira" }
+ */
+export function formatarDataHora(dataHoraISO, timeStr = null) {
+  if (!dataHoraISO) return { data: '', hora: '', diaSemana: '' };
+
+  let dateObj;
+  let horaFinal = '';
+
+  // Se vier no formato ISO completo (ex: "2025-12-05T19:30:00")
+  if (dataHoraISO.includes('T')) {
+    dateObj = new Date(dataHoraISO);
+    horaFinal = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  } 
+  // Se vier separado (data + hora)
+  else {
+    dateObj = new Date(dataHoraISO + 'T00:00:00');
+    horaFinal = timeStr ? timeStr.substring(0, 5) : '';
+  }
+
+  const dataFormatada = dateObj.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+
+  const diasSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+  const diaSemana = diasSemana[dateObj.getDay()];
+
+  return {
+    data: dataFormatada,
+    hora: horaFinal,
+    diaSemana: diaSemana
+  };
+}
+
+// ========== FORMATAR HORA (usado em generator.js) ==========
+/**
+ * Formata hora no padrão HH:MM
+ * @param {string} timeStr - Hora no formato HH:MM ou HH:MM:SS
+ * @returns {string} - Ex: "19:30"
+ */
+export function formatarHora(timeStr) {
+  if (!timeStr) return '';
+  return timeStr.substring(0, 5);
+}
+
+// ========== FORMATAR MÊS/ANO (usado em generator.js) ==========
+/**
+ * Formata mês/ano no padrão brasileiro
+ * @param {string} mesAno - Mês/ano no formato YYYY-MM
+ * @returns {string} - Ex: "Dezembro de 2025"
+ */
+export function formatarMesAno(mesAno) {
+  if (!mesAno) return '';
+  
+  const [ano, mes] = mesAno.split('-');
+  const meses = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
+  
+  const mesNome = meses[parseInt(mes, 10) - 1];
+  return `${mesNome} de ${ano}`;
 }

@@ -1,27 +1,20 @@
 // service-worker.js
-// Service Worker para PWA - Gerador de Agenda Wapp
 
-const CACHE_STATIC_NAME = 'agenda-wapp-static-v1.8';
-const CACHE_DYNAMIC_NAME = 'agenda-wapp-dynamic-v1.8';
+var CACHE_STATIC_NAME = 'agenda-wapp-static-v1.9';
+var CACHE_DYNAMIC_NAME = 'agenda-wapp-dynamic-v1.9';
 
-const STATIC_FILES = [
+var STATIC_FILES = [
   '/',
   '/index.html',
   '/style.css',
-  '/src/main.js',
-  '/src/services/firebase-api.js',
+  '/src/app.js',
+  '/src/services/firebase.js',
   '/src/services/helpers.js',
-  '/src/modules/dom-elements.js',
-  '/src/modules/events.js',
-  '/src/modules/generator.js',
-  '/src/modules/settings.js',
-  '/src/modules/templates.js',
   '/manifest.json'
 ];
 
-// 1. INSTALAÇÃO
 self.addEventListener('install', function(event) {
-  console.log('[Service Worker] Instalando v1.8...');
+  console.log('[Service Worker] Instalando v1.9...');
   event.waitUntil(
     caches.open(CACHE_STATIC_NAME)
       .then(function(cache) {
@@ -35,9 +28,8 @@ self.addEventListener('install', function(event) {
   );
 });
 
-// 2. ATIVAÇÃO
 self.addEventListener('activate', function(event) {
-  console.log('[Service Worker] Ativando v1.8...');
+  console.log('[Service Worker] Ativando v1.9...');
   event.waitUntil(
     caches.keys().then(function(keyList) {
       return Promise.all(keyList.map(function(key) {
@@ -53,17 +45,14 @@ self.addEventListener('activate', function(event) {
   );
 });
 
-// 3. FETCH
 self.addEventListener('fetch', function(event) {
   var requestUrl = new URL(event.request.url);
   var request = event.request;
 
-  // Ignora requisições não HTTP(s)
   if (requestUrl.protocol !== 'http:' && requestUrl.protocol !== 'https:') {
     return;
   }
 
-  // Cache-First para arquivos estáticos
   if (STATIC_FILES.indexOf(requestUrl.pathname) !== -1) {
     event.respondWith(
       caches.match(request).then(function(response) {
@@ -73,7 +62,6 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
-  // Network-Only para Firebase
   if (requestUrl.host.indexOf('googleapis.com') !== -1 ||
       requestUrl.host.indexOf('firebaseapp.com') !== -1 ||
       requestUrl.host.indexOf('gstatic.com') !== -1) {
@@ -81,7 +69,6 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
-  // Network-First com Cache Fallback
   event.respondWith(
     fetch(request)
       .then(function(networkResponse) {

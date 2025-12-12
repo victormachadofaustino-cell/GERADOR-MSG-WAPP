@@ -1,583 +1,343 @@
 // src/app.js
 
-// Firebase Auth and Firestore já foram inicializados inline no index.html
-const auth = firebase.auth();
-const db = firebase.firestore();
+// IMPORTAÇÕES PRINCIPAIS
+import { INSTANCES } from './services/firebase.js';
+import * as DOM from './modules/dom-elements.js';
+import * as Helpers from './services/helpers.js';
 
-// DOM Elements
-const authContainer = document.getElementById('auth-container');
-const appContainer = document.getElementById('app-container');
-const userEmailSpan = document.getElementById('user-email');
-const logoutButton = document.getElementById('logout-button');
-const headerTitle = document.getElementById('header-title');
-const navItems = document.querySelectorAll('.nav-item');
-const loginForm = document.getElementById('login-form');
-const loginEmailInput = document.getElementById('login-email');
-const loginPasswordInput = document.getElementById('login-password');
-const errorMessage = document.getElementById('error-message');
-const loadingOverlay = document.getElementById('loading-overlay');
-const eventsList = document.getElementById('events-list');
-const filterChips = document.querySelectorAll('.filter-chip');
-const addEventButton = document.getElementById('add-event-button');
+// MÓDULOS
+import {
+  initEventsListeners,
+  carregarEventosIniciais,
+  getEventosCache,
+  getCidadesCache,
+  getTitulosCache
+} from './modules/events.js';
 
-// Estado em memória
-let allEvents = [];
-let currentFilter = 'todos';
+import {
+  initGeneratorListeners,
+  carregarGeradorSelects,
+  updateGeneratorState
+} from './modules/generator.js';
 
-// --- UI Utility Functions ---
-function showLoading() {
-    if (loadingOverlay) loadingOverlay.style.display = 'flex';
+import {
+  initTemplatesListeners,
+  renderTemplates
+} from './modules/templates.js';
+
+import {
+  initSettingsListeners,
+  loadSettings
+} from './modules/settings.js';
+
+// ===============================
+// ESTADO GLOBAL DE APP
+// ===============================
+let usuarioAtual = null;
+let settingsCategoriaAtual = 'cidades'; // ✅ rastrear categoria ativa em Config
+
+// Helper pra depuração
+function debugLog(...args) {
+  console.log('[APP]', ...args);
 }
 
-function hideLoading() {
-    if (loadingOverlay) loadingOverlay.style.display = 'none';
-}
+// ===============================
+// MENU PERFIL (NOVO)
+// ===============================
+function initProfileMenu() {
+  const btnProfile = document.getElementById('btn-profile');
+  const menu = document.getElementById('profile-menu');
+  const btnLogout = document.getElementById('btn-logout');
 
-function showApp() {
-    if (authContainer) authContainer.style.display = 'none';
-    if (appContainer) appContainer.style.display = 'flex';
-}
+  if (!btnProfile || !menu) {
+    console.warn('⚠️ Menu de perfil não encontrado (#btn-profile / #profile-menu).');
+    return;
+  }
 
-function showAuth() {
-    if (authContainer) authContainer.style.display = 'flex';
-    if (appContainer) appContainer.style.display = 'none';
-}
+  const abrir = () => {
+    menu.classList.remove('hidden');
+    btnProfile.setAttribute('aria-expanded', 'true');
+  };
 
-function updateHeaderTitle(title) {
-    if (headerTitle) {
-        headerTitle.textContent = title;
-    }
-}
+  const fechar = () => {
+    menu.classList.add('hidden');
+    btnProfile.setAttribute('aria-expanded', 'false');
+  };
 
-function showView(viewId) {
-    document.querySelectorAll('.app-view').forEach(view => {
-        view.classList.remove('active');
-    });
-    const activeView = document.getElementById(viewId);
-    if (activeView) {
-        activeView.classList.add('active');
-    }
-}
+  const toggle = () => {
+    const aberto = !menu.classList.contains('hidden');
+    if (aberto) fechar();
+    else abrir();
+  };
 
-// --- Helpers de data / agrupamento ---
-function formatDate(date) {
-    return date.toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    });
-}
+  // Clique no avatar abre/fecha
+  btnProfile.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggle();
+  });
 
-function formatDateTime(date) {
-    return date.toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
+  // Clique fora fecha
+  document.addEventListener('click', (e) => {
+    if (menu.classList.contains('hidden')) return;
+    const cliqueDentro = menu.contains(e.target) || btnProfile.contains(e.target);
+    if (!cliqueDentro) fechar();
+  });
 
-function formatMonthYear(date) {
-    return date.toLocaleDateString('pt-BR', {
-        month: 'long',
-        year: 'numeric'
-    });
-}
+  // ESC fecha
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') fechar();
+  });
 
-function getWeekdayName(date) {
-    const weekdays = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-    return weekdays[date.getDay()];
-}
+  // Clique no sair (fecha menu + logout)
+  if (btnLogout) {
+    btnLogout.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      fechar();
 
-function getWeekOfMonth(date) {
-    const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-    const dayOfMonth = date.getDate();
-    const weekNumber = Math.ceil((dayOfMonth + firstDay.getDay()) / 7);
-    
-    const ordinals = ['', '1º', '2º', '3º', '4º', '5º'];
-    return ordinals[weekNumber] || weekNumber + 'º';
-}
-
-function formatDateDescription(date) {
-    const weekOfMonth = getWeekOfMonth(date);
-    const weekday = getWeekdayName(date);
-    return `${weekOfMonth} ${weekday}`;
-}
-
-function normalizeString(str) {
-    return (str || '').toLowerCase();
-}
-
-// --- Carregar eventos do Firestore ---
-async function loadEvents() {
-    if (!eventsList) return;
-
-    showLoading();
-    eventsList.innerHTML = '<div class="card"><p>Carregando eventos...</p></div>';
-
-    try {
-        const snapshot = await db
-            .collection('eventos')
-            .orderBy('data_hora', 'desc')
-            .limit(200)
-            .get();
-
-        allEvents = [];
-
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            let dataJs = null;
-
-            if (data.data_hora && data.data_hora.toDate) {
-                dataJs = data.data_hora.toDate();
-            }
-
-            allEvents.push({
-                id: doc.id,
-                data: dataJs,
-                cidade_nome: data.cidade_nome || '',
-                comum_nome: data.comum_nome || '',
-                tipo_evento_nome: data.tipo_evento_nome || '',
-                titulo_nome: data.titulo_nome || '',
-                sigla: data.sigla || '',
-                raw: data
-            });
-        });
-
-        console.log(`✅ ${allEvents.length} eventos carregados do Firestore`);
-        renderFilteredEvents();
-    } catch (error) {
-        console.error('❌ Erro ao carregar eventos:', error);
-        eventsList.innerHTML = '<div class="card"><p>Erro ao carregar eventos.</p></div>';
-    } finally {
-        hideLoading();
-    }
-}
-
-// --- Aplicar filtro atual e renderizar ---
-function renderFilteredEvents() {
-    if (!eventsList) return;
-
-    let eventsToRender = [...allEvents];
-
-    if (currentFilter === 'reuniao') {
-        eventsToRender = eventsToRender.filter(ev =>
-            normalizeString(ev.tipo_evento_nome).includes('reuni')
-        );
-    } else if (currentFilter === 'ensaio') {
-        eventsToRender = eventsToRender.filter(ev =>
-            normalizeString(ev.tipo_evento_nome).includes('ensaio')
-        );
-    } else if (currentFilter === 'extra') {
-        eventsToRender = eventsToRender.filter(ev =>
-            normalizeString(ev.tipo_evento_nome).includes('extra')
-        );
-    }
-
-    console.log(`🔍 Filtro "${currentFilter}": ${eventsToRender.length} eventos`);
-    renderEvents(eventsToRender);
-}
-
-// --- Renderização dos eventos agrupados por mês ---
-function renderEvents(events) {
-    eventsList.innerHTML = '';
-
-    if (!events.length) {
-        eventsList.innerHTML = '<div class="card"><p>Nenhum evento encontrado.</p></div>';
+      const auth = INSTANCES.auth;
+      if (!auth) {
+        Helpers.showToast('Auth não disponível.', true);
         return;
+      }
+
+      try {
+        await auth.signOut();
+        Helpers.showToast('Logout realizado.');
+      } catch (err) {
+        console.error('Erro ao sair:', err);
+        Helpers.showToast('Erro ao sair: ' + err.message, true);
+      }
+    });
+  } else {
+    console.warn('⚠️ Botão #btn-logout não encontrado no DOM.');
+  }
+
+  // Expor helpers caso precise em debug
+  window.__profileMenu = { abrir, fechar, toggle };
+}
+
+// ===============================
+// ✅ REFRESH GLOBAL
+// ===============================
+async function refreshGlobal() {
+  debugLog('🔄 Refresh global iniciado...');
+  Helpers.showToast('Atualizando dados...');
+
+  try {
+    // 1) Recarregar eventos + caches (cidades, títulos, comuns, participantes, etc.)
+    await carregarEventosIniciais();
+    debugLog('✅ Eventos e cadastros recarregados.');
+
+    // 2) Atualizar gerador (públicos + templates)
+    updateGeneratorState(getEventosCache(), []);
+    await carregarGeradorSelects();
+    debugLog('✅ Gerador atualizado.');
+
+    // 3) Se estiver na aba Config, recarregar a lista atual
+    const configVisivel = !document.getElementById('pagina-configuracoes')?.classList.contains('hidden');
+    if (configVisivel) {
+      await loadSettings(settingsCategoriaAtual);
+      debugLog('✅ Config recarregado:', settingsCategoriaAtual);
     }
 
-    // Agrupar por mês/ano
-    const groups = {};
-
-    events.forEach(ev => {
-        const date = ev.data || new Date(2000, 0, 1);
-        const key = formatMonthYear(date);
-
-        if (!groups[key]) {
-            groups[key] = [];
-        }
-
-        groups[key].push(ev);
-    });
-
-    // Ordenar grupos por data (mais recente primeiro)
-    const sortedGroupKeys = Object.keys(groups).sort((a, b) => {
-        const dateA = groups[a][0].data || new Date(2000, 0, 1);
-        const dateB = groups[b][0].data || new Date(2000, 0, 1);
-        return dateB - dateA;
-    });
-
-    // Renderizar cada grupo
-    sortedGroupKeys.forEach(groupLabel => {
-        const monthGroup = document.createElement('div');
-        monthGroup.className = 'month-group';
-
-        const header = document.createElement('div');
-        header.className = 'month-header';
-        header.textContent = groupLabel;
-        monthGroup.appendChild(header);
-
-        // Ordenar eventos dentro do grupo (mais recente primeiro)
-        const sortedEvents = groups[groupLabel].sort((a, b) => {
-            const dateA = a.data || new Date(2000, 0, 1);
-            const dateB = b.data || new Date(2000, 0, 1);
-            return dateB - dateA;
-        });
-
-        sortedEvents.forEach(ev => {
-            const card = createEventCard(ev);
-            monthGroup.appendChild(card);
-        });
-
-        eventsList.appendChild(monthGroup);
-    });
-}
-
-// --- Criar card de evento (accordion) ---
-function createEventCard(ev) {
-    const card = document.createElement('div');
-    card.className = 'card event-card';
-    card.dataset.eventId = ev.id;
-
-    const isEnsaio = normalizeString(ev.tipo_evento_nome).includes('ensaio');
-    const isReuniao = normalizeString(ev.tipo_evento_nome).includes('reuni');
-
-    let titleLine = '';
-    let subtitleLine = '';
-
-    if (isEnsaio) {
-        // Ensaio Regional - Cidade
-        titleLine = `${ev.titulo_nome || ev.tipo_evento_nome} - ${ev.cidade_nome || '—'}`;
-        // Data - Descrição da data (3º Domingo)
-        if (ev.data) {
-            subtitleLine = `${formatDate(ev.data)} - ${formatDateDescription(ev.data)}`;
-        } else {
-            subtitleLine = 'Data não definida';
-        }
-    } else if (isReuniao) {
-        // Sigla - Reunião
-        titleLine = `${ev.sigla || '—'} - ${ev.tipo_evento_nome}`;
-        // Data - Descrição da data (Quarta quarta-feira)
-        if (ev.data) {
-            subtitleLine = `${formatDate(ev.data)} - ${formatDateDescription(ev.data)}`;
-        } else {
-            subtitleLine = 'Data não definida';
-        }
-    } else {
-        // Outros eventos
-        titleLine = ev.titulo_nome || ev.tipo_evento_nome || 'Evento';
-        if (ev.data) {
-            subtitleLine = `${formatDate(ev.data)} - ${formatDateDescription(ev.data)}`;
-        } else {
-            subtitleLine = 'Data não definida';
-        }
+    // 4) Se estiver na aba Templates, recarregar
+    const templatesVisivel = !document.getElementById('pagina-templates')?.classList.contains('hidden');
+    if (templatesVisivel) {
+      await renderTemplates();
+      debugLog('✅ Templates recarregados.');
     }
 
-    card.innerHTML = `
-        <div class="event-card-header">
-            <div class="event-main-info">
-                <div class="event-title">${titleLine}</div>
-                <div class="event-date">${subtitleLine}</div>
-            </div>
-            <div class="event-type-badge">
-                ${ev.tipo_evento_nome || '—'}
-            </div>
-            <div class="event-toggle-icon">+</div>
-        </div>
-        <div class="event-details">
-            <p><strong>Cidade:</strong> ${ev.cidade_nome || '—'}</p>
-            <p><strong>Comum:</strong> ${ev.comum_nome || '—'}</p>
-            ${ev.titulo_nome ? `<p><strong>Título:</strong> ${ev.titulo_nome}</p>` : ''}
-            ${ev.sigla ? `<p><strong>Sigla:</strong> ${ev.sigla}</p>` : ''}
-            ${ev.data ? `<p><strong>Data/Hora:</strong> ${formatDateTime(ev.data)}</p>` : ''}
-            <div class="card-actions" style="margin-top: 12px;">
-                <button class="icon-button" onclick="editEvent('${ev.id}'); event.stopPropagation();">
-                    <span class="material-icons">edit</span>
-                </button>
-                <button class="icon-button" onclick="deleteEvent('${ev.id}'); event.stopPropagation();">
-                    <span class="material-icons">delete</span>
-                </button>
-            </div>
-        </div>
-    `;
+    Helpers.showToast('Dados atualizados!');
+  } catch (err) {
+    console.error('Erro no refresh global:', err);
+    Helpers.showToast('Erro ao atualizar: ' + err.message, true);
+  }
+}
 
-    // Accordion: expand/collapse
-    card.addEventListener('click', (e) => {
-        // Não expandir se clicar nos botões de ação
-        if (e.target.closest('.card-actions')) return;
-        
-        const expanded = card.classList.toggle('expanded');
-        const toggleIcon = card.querySelector('.event-toggle-icon');
-        if (toggleIcon) {
-            toggleIcon.textContent = expanded ? '+' : '+';
-        }
+// ===============================
+// RASTREAMENTO DE CATEGORIA CONFIG
+// ===============================
+function setupSettingsTracking() {
+  document.querySelectorAll('.settings-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.target;
+      if (target) settingsCategoriaAtual = target;
     });
-
-    return card;
+  });
 }
 
-// --- Modal para adicionar/editar evento ---
-function showEventModal(eventId = null) {
-    const isEdit = !!eventId;
-    const modalTitle = isEdit ? 'Editar Evento' : 'Novo Evento';
-    
-    // Criar modal
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>${modalTitle}</h2>
-                <button class="icon-button modal-close">
-                    <span class="material-icons">close</span>
-                </button>
-            </div>
-            <form id="event-form" class="modal-form">
-                <div class="form-group">
-                    <label for="event-tipo">Tipo de Evento *</label>
-                    <input type="text" id="event-tipo" required placeholder="Ex: Reunião Regional Ministerial">
-                </div>
-                
-                <div class="form-group">
-                    <label for="event-titulo">Título</label>
-                    <input type="text" id="event-titulo" placeholder="Ex: Ensaio Regional">
-                </div>
-                
-                <div class="form-group">
-                    <label for="event-sigla">Sigla</label>
-                    <input type="text" id="event-sigla" placeholder="Ex: RRM">
-                </div>
-                
-                <div class="form-group">
-                    <label for="event-cidade">Cidade *</label>
-                    <input type="text" id="event-cidade" required placeholder="Ex: São Paulo">
-                </div>
-                
-                <div class="form-group">
-                    <label for="event-comum">Comum</label>
-                    <input type="text" id="event-comum" placeholder="Ex: Comum Central">
-                </div>
-                
-                <div class="form-group">
-                    <label for="event-data">Data e Hora *</label>
-                    <input type="datetime-local" id="event-data" required>
-                </div>
-                
-                <div class="modal-actions">
-                    <button type="button" class="button secondary-button modal-cancel">Cancelar</button>
-                    <button type="submit" class="button primary-button">${isEdit ? 'Salvar' : 'Criar'}</button>
-                </div>
-            </form>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // Event listeners
-    const closeBtn = modal.querySelector('.modal-close');
-    const cancelBtn = modal.querySelector('.modal-cancel');
-    const form = modal.querySelector('#event-form');
-    
-    const closeModal = () => {
-        modal.remove();
-    };
-    
-    closeBtn.addEventListener('click', closeModal);
-    cancelBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal();
-    });
-    
-    // Se for edição, carregar dados
-    if (isEdit) {
-        loadEventData(eventId, form);
-    }
-    
-    // Submit do formulário
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await saveEvent(eventId, form);
-        closeModal();
-    });
-}
+// ===============================
+// AUTENTICAÇÃO
+// ===============================
+function initAuth() {
+  const auth = INSTANCES.auth;
+  if (!auth) {
+    console.error('Auth não inicializado em INSTANCES.');
+    return;
+  }
 
-async function loadEventData(eventId, form) {
-    showLoading();
-    try {
-        const doc = await db.collection('eventos').doc(eventId).get();
-        if (doc.exists) {
-            const data = doc.data();
-            
-            form.querySelector('#event-tipo').value = data.tipo_evento_nome || '';
-            form.querySelector('#event-titulo').value = data.titulo_nome || '';
-            form.querySelector('#event-sigla').value = data.sigla || '';
-            form.querySelector('#event-cidade').value = data.cidade_nome || '';
-            form.querySelector('#event-comum').value = data.comum_nome || '';
-            
-            if (data.data_hora && data.data_hora.toDate) {
-                const date = data.data_hora.toDate();
-                const dateString = date.toISOString().slice(0, 16);
-                form.querySelector('#event-data').value = dateString;
-            }
-        }
-    } catch (error) {
-        console.error('❌ Erro ao carregar evento:', error);
-        alert('Erro ao carregar dados do evento.');
-    } finally {
-        hideLoading();
-    }
-}
+  auth.onAuthStateChanged(async (user) => {
+    usuarioAtual = user;
 
-async function saveEvent(eventId, form) {
-    showLoading();
-    
-    const eventData = {
-        tipo_evento_nome: form.querySelector('#event-tipo').value.trim(),
-        titulo_nome: form.querySelector('#event-titulo').value.trim(),
-        sigla: form.querySelector('#event-sigla').value.trim(),
-        cidade_nome: form.querySelector('#event-cidade').value.trim(),
-        comum_nome: form.querySelector('#event-comum').value.trim(),
-        data_hora: firebase.firestore.Timestamp.fromDate(new Date(form.querySelector('#event-data').value))
-    };
-    
-    try {
-        if (eventId) {
-            // Atualizar evento existente
-            await db.collection('eventos').doc(eventId).update(eventData);
-            console.log('✅ Evento atualizado:', eventId);
-        } else {
-            // Criar novo evento
-            const docRef = await db.collection('eventos').add(eventData);
-            console.log('✅ Novo evento criado:', docRef.id);
-        }
-        
-        // Recarregar lista
-        await loadEvents();
-    } catch (error) {
-        console.error('❌ Erro ao salvar evento:', error);
-        alert('Erro ao salvar evento: ' + error.message);
-    } finally {
-        hideLoading();
-    }
-}
-
-// --- Editar evento ---
-function editEvent(eventId) {
-    console.log('✏️ Editar evento:', eventId);
-    showEventModal(eventId);
-}
-
-// --- Deletar evento ---
-function deleteEvent(eventId) {
-    if (confirm('Tem certeza que deseja excluir este evento?')) {
-        showLoading();
-        db.collection('eventos').doc(eventId).delete()
-            .then(() => {
-                console.log('🗑️ Evento excluído:', eventId);
-                loadEvents();
-            })
-            .catch(error => {
-                console.error('❌ Erro ao excluir evento:', error);
-                alert('Erro ao excluir evento.');
-            })
-            .finally(() => {
-                hideLoading();
-            });
-    }
-}
-
-// --- Auth State Listener ---
-auth.onAuthStateChanged(user => {
     if (user) {
-        console.log('✅ Usuário logado:', user.email);
-        if (userEmailSpan) userEmailSpan.textContent = user.email;
-        showApp();
+      debugLog('Usuário logado:', user.email);
+      if (DOM.loginContainer) DOM.loginContainer.classList.add('hidden');
+      if (DOM.appContainer) DOM.appContainer.classList.remove('hidden');
 
-        // Ativa a view padrão (Eventos)
-        const defaultNavItem = document.querySelector('.nav-item.active');
-        if (defaultNavItem) {
-            const defaultViewId = defaultNavItem.dataset.view;
-            const defaultTitle = defaultNavItem.dataset.title;
-            showView(defaultViewId);
-            updateHeaderTitle(defaultTitle);
-        }
+      // Mostra e-mail no header, se tiver elemento
+      const emailSpan = document.getElementById('user-email-display');
+      if (emailSpan) emailSpan.textContent = user.email || '';
 
-        // Carrega os eventos
-        loadEvents();
+      await carregarDadosIniciais();
     } else {
-        console.log('❌ Usuário não logado');
-        showAuth();
+      debugLog('Usuário não autenticado');
+      if (DOM.loginContainer) DOM.loginContainer.classList.remove('hidden');
+      if (DOM.appContainer) DOM.appContainer.classList.add('hidden');
     }
-    hideLoading();
-});
+  });
 
-// --- Login ---
-if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        showLoading();
-        const email = loginEmailInput.value;
-        const password = loginPasswordInput.value;
+  // Submit do formulário de login
+  if (DOM.loginForm) {
+    DOM.loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      debugLog('Submit do login disparado');
 
-        try {
-            await auth.signInWithEmailAndPassword(email, password);
-            if (errorMessage) errorMessage.textContent = '';
-        } catch (error) {
-            console.error("❌ Erro no login:", error);
-            if (errorMessage) errorMessage.textContent = 'Erro ao fazer login: ' + error.message;
-        } finally {
-            hideLoading();
-        }
+      if (!DOM.loginEmail || !DOM.loginPassword) {
+        console.error('Elementos de e-mail/senha não encontrados no DOM.');
+        return;
+      }
+
+      const email = DOM.loginEmail.value.trim();
+      const senha = DOM.loginPassword.value.trim();
+
+      if (!email || !senha) {
+        Helpers.showToast('Preencha e-mail e senha', true);
+        return;
+      }
+
+      try {
+        debugLog('Tentando login com:', email);
+        await auth.signInWithEmailAndPassword(email, senha);
+        Helpers.showToast('Login realizado com sucesso!');
+        DOM.loginForm.reset();
+      } catch (err) {
+        console.error('Erro no login:', err);
+        let msg = 'Erro ao fazer login.';
+        if (err.code === 'auth/wrong-password') msg = 'Senha incorreta.';
+        if (err.code === 'auth/user-not-found') msg = 'Usuário não encontrado.';
+        Helpers.showToast(msg, true);
+      }
     });
+  } else {
+    console.warn('DOM.loginForm não encontrado. Verifique o id="login-form" no HTML.');
+  }
+
+  // ⚠️ Logout pelo DOM.logoutButton ainda pode existir, mas agora o logout principal está no menu perfil.
+  // Mantemos como fallback:
+  if (DOM.logoutButton) {
+    DOM.logoutButton.addEventListener('click', async () => {
+      try {
+        await auth.signOut();
+        Helpers.showToast('Logout realizado.');
+      } catch (err) {
+        console.error('Erro ao sair:', err);
+        Helpers.showToast('Erro ao sair: ' + err.message, true);
+      }
+    });
+  }
 }
 
-// --- Logout ---
-if (logoutButton) {
-    logoutButton.addEventListener('click', async () => {
-        showLoading();
-        try {
-            await auth.signOut();
-            console.log('👋 Logout realizado');
-        } catch (error) {
-            console.error("❌ Erro no logout:", error);
-            alert("Erro ao fazer logout: " + error.message);
-        } finally {
-            hideLoading();
-        }
+// ===============================
+// NAVEGAÇÃO ENTRE PÁGINAS
+// ===============================
+function initNavigation() {
+  if (!DOM.navItems || DOM.navItems.length === 0) {
+    console.warn('Nenhum item de navegação encontrado (footer-nav-item).');
+    return;
+  }
+
+  DOM.navItems.forEach((item) => {
+    item.addEventListener('click', async () => {
+      const targetPage = item.dataset.page;
+      if (!targetPage) return;
+
+      DOM.navItems.forEach((i) => i.classList.remove('active'));
+      item.classList.add('active');
+
+      DOM.pages.forEach((section) => {
+        if (section.id === `pagina-${targetPage}`) section.classList.remove('hidden');
+        else section.classList.add('hidden');
+      });
+
+      // Ao entrar no Gerador, garantir selects atualizados
+      if (targetPage === 'gerador') {
+        await carregarGeradorSelects();
+      }
     });
+  });
 }
 
-// --- Bottom Navigation ---
-navItems.forEach(item => {
-    item.addEventListener('click', () => {
-        navItems.forEach(nav => nav.classList.remove('active'));
-        item.classList.add('active');
-        const viewId = item.dataset.view;
-        const title = item.dataset.title;
-        showView(viewId);
-        updateHeaderTitle(title);
-    });
-});
+// ===============================
+// DADOS INICIAIS
+// ===============================
+async function carregarDadosIniciais() {
+  debugLog('🔄 Carregando dados iniciais...');
 
-// --- Filtros de eventos ---
-filterChips.forEach(chip => {
-    chip.addEventListener('click', () => {
-        filterChips.forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        currentFilter = chip.dataset.filter || 'todos';
-        console.log(`🔄 Filtro alterado para: ${currentFilter}`);
-        renderFilteredEvents();
-    });
-});
+  try {
+    // 1) Eventos + caches
+    await carregarEventosIniciais();
+    debugLog('✅ Eventos e cadastros carregados.');
 
-// --- Botão adicionar evento ---
-if (addEventButton) {
-    addEventButton.addEventListener('click', () => {
-        showEventModal();
-    });
+    // 2) Configurações
+    initSettingsListeners(getCidadesCache(), getTitulosCache());
+    setupSettingsTracking();
+    await loadSettings(settingsCategoriaAtual);
+
+    // 3) Templates
+    await renderTemplates();
+    initTemplatesListeners();
+
+    // 4) Gerador
+    updateGeneratorState(getEventosCache(), []);
+    await carregarGeradorSelects();
+    initGeneratorListeners(getEventosCache(), []);
+
+    Helpers.showToast('Dados iniciais carregados!');
+    debugLog('✅ Dados iniciais carregados.');
+  } catch (err) {
+    console.error('Erro ao carregar dados iniciais:', err);
+    Helpers.showToast('Erro ao carregar dados iniciais: ' + err.message, true);
+  }
 }
 
-// Initial load state
-showLoading();
+// ===============================
+// BOOTSTRAP DO APP
+// ===============================
+function initApp() {
+  debugLog('Inicializando app...');
+
+  initAuth();
+  initNavigation();
+  initEventsListeners();
+
+  // ✅ menu perfil
+  initProfileMenu();
+
+  // Botão refresh global
+  const btnRefresh = document.getElementById('btn-refresh-app');
+  if (btnRefresh) {
+    btnRefresh.addEventListener('click', refreshGlobal);
+    debugLog('✅ Botão refresh global conectado.');
+  } else {
+    console.warn('⚠️ Botão #btn-refresh-app não encontrado no DOM.');
+  }
+}
+
+// ===============================
+// INICIALIZAÇÃO GLOBAL
+// ===============================
+document.addEventListener('DOMContentLoaded', () => {
+  initApp();
+});

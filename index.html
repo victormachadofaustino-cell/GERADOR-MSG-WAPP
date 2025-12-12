@@ -1,153 +1,338 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Mensagens</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#3B82F6"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0d6efd" />
+  <title>AgendaWapp</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <!-- Loading Overlay -->
-    <div id="loading-overlay">
-        <div class="spinner"></div>
-    </div>
 
-    <!-- Auth Container (Login Screen) -->
-    <div id="auth-container">
-        <div id="auth-panel">
-            <h2>Login</h2>
-            <form id="login-form">
-                <input type="email" id="login-email" placeholder="Email" required autocomplete="email">
-                <input type="password" id="login-password" placeholder="Senha" required autocomplete="current-password">
-                <button type="submit" id="login-button">Entrar</button>
-                <div id="error-message"></div>
-            </form>
-        </div>
-    </div>
+  <!-- ====== TELA DE LOGIN ====== -->
+  <div id="login-container" class="hidden">
+    <h1>🔐 Login</h1>
+    <form id="login-form">
+      <div class="form-group">
+        <label for="login-email">E-mail</label>
+        <input type="email" id="login-email" autocomplete="username" required />
+      </div>
+      <div class="form-group">
+        <label for="login-senha">Senha</label>
+        <input type="password" id="login-senha" required autocomplete="current-password" />
+      </div>
+      <button type="submit" class="btn primario" style="width: 100%;">Entrar</button>
+    </form>
+  </div>
 
-    <!-- App Container (Main App) -->
-    <div id="app-container" style="display: none;">
-        <!-- Top Header -->
-        <header id="app-header">
-            <h1 id="header-title">Eventos</h1>
-            <div id="user-info">
-                <span id="user-email"></span>
-                <button id="logout-button" class="icon-button">
-                    <span class="material-icons">logout</span>
-                </button>
-            </div>
-        </header>
-
-        <!-- Main Content Area -->
-        <main id="main-content">
-            <!-- Events View -->
-            <section id="events-view" class="app-view active">
-                <div class="view-header">
-                    <button id="add-event-button" class="button primary-button">
-                        <span class="material-icons">add</span> Novo Evento
-                    </button>
-                </div>
-
-                <!-- Filtros de tipo de evento -->
-                <div id="events-filters">
-                    <button class="filter-chip active" data-filter="todos">Todos</button>
-                    <button class="filter-chip" data-filter="reuniao">Reuniões</button>
-                    <button class="filter-chip" data-filter="ensaio">Ensaios</button>
-                    <button class="filter-chip" data-filter="extra">Extras</button>
-                </div>
-
-                <!-- Lista de eventos agrupados por mês -->
-                <div id="events-list">
-                    <!-- Eventos serão renderizados aqui -->
-                </div>
-            </section>
-
-            <!-- Generator View -->
-            <section id="generator-view" class="app-view">
-                <div class="view-header">
-                    <h2>Gerador de Mensagens</h2>
-                </div>
-                <div class="card">
-                    <p>Aqui será o formulário para gerar mensagens.</p>
-                </div>
-            </section>
-
-            <!-- Templates View -->
-            <section id="templates-view" class="app-view">
-                <div class="view-header">
-                    <button id="add-template-button" class="button primary-button">
-                        <span class="material-icons">add</span> Novo Template
-                    </button>
-                </div>
-                <div class="card-list" id="templates-list">
-                    <div class="card">
-                        <h3>Template de Exemplo</h3>
-                        <p>Conteúdo: Lorem ipsum dolor sit amet...</p>
-                        <div class="card-actions">
-                            <button class="icon-button"><span class="material-icons">edit</span></button>
-                            <button class="icon-button"><span class="material-icons">delete</span></button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Settings View -->
-            <section id="settings-view" class="app-view">
-                <div class="view-header">
-                    <h2>Configurações</h2>
-                </div>
-                <div class="card">
-                    <p>Aqui serão as opções de configuração.</p>
-                </div>
-            </section>
-        </main>
-
-        <!-- Bottom Navigation Bar -->
-        <nav id="bottom-nav">
-            <button class="nav-item active" data-view="events-view" data-title="Eventos">
-                <span class="material-icons">event</span>
-                <span>Eventos</span>
-            </button>
-            <button class="nav-item" data-view="generator-view" data-title="Gerador">
-                <span class="material-icons">auto_awesome</span>
-                <span>Gerador</span>
-            </button>
-            <button class="nav-item" data-view="templates-view" data-title="Templates">
-                <span class="material-icons">description</span>
-                <span>Templates</span>
-            </button>
-            <button class="nav-item" data-view="settings-view" data-title="Configurações">
-                <span class="material-icons">settings</span>
-                <span>Configurações</span>
-            </button>
-        </nav>
-    </div>
-
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <!-- ====== APP PRINCIPAL ====== -->
+  <div id="app-container" class="hidden">
     
-    <!-- Firebase Config (inline) -->
-    <script>
-        // Configuração do Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyCADgdZJ45YtaRsPzPFGpQCFz5fOoTF5kI",
-            authDomain: "gerador-msg-wapp.firebaseapp.com",
-            projectId: "gerador-msg-wapp",
-            storageBucket: "gerador-msg-wapp.firebasestorage.app",
-            messagingSenderId: "879738577541",
-            appId: "1:879738577541:web:bf90d416f52e12b1d97fec"
-        };
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="app-header-title">
+        <h1>Gerador de Eventos Musicais CCB</h1>
+        <p id="user-email-display"></p>
+      </div>
 
-        // Inicializa o Firebase
-        firebase.initializeApp(firebaseConfig);
-    </script>
+      <div style="display:flex;gap:8px;align-items:center; position: relative;">
+        <!-- ✅ Botão Refresh Global -->
+        <button id="btn-refresh-app" class="btn secundario" type="button" title="Atualizar dados">⟳</button>
 
-    <!-- App Logic -->
-    <script src="src/app.js"></script>
+        <!-- ✅ Perfil (VF) + menu -->
+        <button id="btn-profile" class="profile-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="profile-menu">
+          <span class="profile-avatar">VF</span>
+        </button>
+
+        <div id="profile-menu" class="profile-menu hidden" role="menu" aria-label="Menu do perfil">
+          <button id="btn-logout" class="profile-menu-item" type="button" role="menuitem">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="app-main">
+      
+      <!-- ====== PÁGINA: EVENTOS ====== -->
+      <section id="pagina-eventos" class="app-page" data-page="eventos">
+        <div class="page-header">
+          <h2>📅 Eventos</h2>
+          <button id="btn-novo-evento" class="btn primario">+ Evento</button>
+        </div>
+
+        <!-- Filtros -->
+        <div class="event-filters" style="display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;">
+          <button class="event-filter-btn active" data-filter="todos">Todos</button>
+          <button class="event-filter-btn" data-filter="reunioes">Reuniões</button>
+          <button class="event-filter-btn" data-filter="ensaios">Ensaios</button>
+          <button class="event-filter-btn" data-filter="extras">Extras</button>
+          <button class="event-filter-btn" data-filter="cancelados">Cancelados</button>
+        </div>
+
+        <!-- Lista de eventos (anos > meses > eventos) -->
+        <ul id="lista-eventos" class="lista-anos"></ul>
+      </section>
+
+      <!-- ====== PÁGINA: GERADOR ====== -->
+      <section id="pagina-gerador" class="app-page hidden" data-page="gerador">
+        <div class="page-header">
+          <h2>✨ Gerador</h2>
+        </div>
+
+        <div class="card">
+          <div class="form-group">
+            <label for="mes-ano-ref">Mês / Ano</label>
+            <input type="month" id="mes-ano-ref" class="input" required />
+          </div>
+
+          <div class="form-group">
+            <label for="select-publico-gerador">Público-alvo</label>
+            <select id="select-publico-gerador" class="input" required>
+              <option value="">-- Selecione --</option>
+            </select>
+          </div>
+
+          <button id="btn-gerar-mensagem" class="btn primario">
+            Gerar Mensagem
+          </button>
+        </div>
+
+        <div class="card" style="margin-top:16px;">
+          <div class="form-group">
+            <label for="mensagem-gerada">Mensagem Gerada</label>
+            <textarea id="mensagem-gerada" class="input" rows="10" readonly></textarea>
+          </div>
+
+          <div style="display:flex; gap:8px;">
+            <button id="btn-copiar-mensagem" class="btn secundario" type="button" style="flex:1;">
+              📋 Copiar
+            </button>
+
+            <!-- ✅ NOVO: Limpar -->
+            <button id="btn-limpar-mensagem" class="btn secundario" type="button" style="flex:1;">
+              🧹 Limpar
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== PÁGINA: TEMPLATES ====== -->
+      <section id="pagina-templates" class="app-page hidden" data-page="templates">
+        <div class="page-header">
+          <h2>📝 Templates</h2>
+          <button id="btn-novo-template" class="btn primario">+ Template</button>
+        </div>
+        <ul id="lista-templates" class="lista-acordeon"></ul>
+      </section>
+
+      <!-- ====== PÁGINA: CONFIGURAÇÕES ====== -->
+      <section id="pagina-configuracoes" class="app-page hidden" data-page="configuracoes">
+        <div class="page-header">
+          <h2 id="settings-title">⚙️ Configurações</h2>
+          <button id="btn-settings-add" class="btn primario" style="display:none;">+ Novo</button>
+        </div>
+
+        <!-- Navegação de categorias -->
+        <div class="settings-nav">
+          <button class="settings-nav-btn" data-target="cidades">🏙️ Cidades</button>
+          <button class="settings-nav-btn" data-target="comuns">📍 Comuns</button>
+          <button class="settings-nav-btn" data-target="participantes">👥 Participantes</button>
+          <button class="settings-nav-btn" data-target="publicos_alvo">🎯 Públicos</button>
+          <button class="settings-nav-btn" data-target="realizacoes">🏛️ Locais</button>
+          <button class="settings-nav-btn" data-target="titulos">📋 Títulos</button>
+        </div>
+
+        <!-- Lista de itens -->
+        <ul id="settings-list" class="lista-acordeon"></ul>
+      </section>
+
+    </main>
+
+    <!-- ✅ Assinatura acima do rodapé -->
+    <div class="app-signature">
+      Secretaria de Música Regional Jundiaí 2025
+    </div>
+
+    <!-- FOOTER NAV -->
+    <nav class="app-footer-nav">
+      <button class="footer-nav-item active" data-page="eventos">📅 Eventos</button>
+      <button class="footer-nav-item" data-page="gerador">✨ Gerador</button>
+      <button class="footer-nav-item" data-page="templates">📝 Templates</button>
+      <button class="footer-nav-item" data-page="configuracoes">⚙️ Config</button>
+    </nav>
+
+  </div>
+
+  <!-- ====== MODAIS (FORA DO APP-CONTAINER) ====== -->
+
+  <!-- MODAL: ESCOLHER TIPO DE EVENTO -->
+  <div id="modal-tipo-evento" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Escolha o tipo de evento</h3>
+      </div>
+      <div class="modal-body">
+        <div class="tipo-buttons">
+          <button class="tipo-btn reuniao-btn" data-tipo="reunioes">
+            <span class="tipo-icone">👥</span>
+            <span>Reunião Regional</span>
+          </button>
+          <button class="tipo-btn ensaio-btn" data-tipo="ensaios">
+            <span class="tipo-icone">🎭</span>
+            <span>Ensaio Regional</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: FORM DE EVENTO -->
+  <div id="evento-form-container" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="evento-modal-title">Novo Evento</h3>
+      </div>
+      <div class="modal-body">
+        <form id="form-evento">
+          
+          <!-- Campos comuns -->
+          <div class="form-group">
+            <label for="evento-cidade">Cidade *</label>
+            <select id="evento-cidade" required></select>
+          </div>
+
+          <div class="form-group">
+            <label for="evento-comum">Local *</label>
+            <select id="evento-comum" required></select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="evento-data">Data *</label>
+              <input type="date" id="evento-data" required />
+            </div>
+            <div class="form-group">
+              <label for="evento-hora">Hora *</label>
+              <input type="time" id="evento-hora" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="evento-desc-data">Descrição da Data</label>
+            <input type="text" id="evento-desc-data" placeholder="Ex: 1º domingo / Ult. sábado" />
+          </div>
+
+          <div class="form-group">
+            <label for="evento-observacoes">Observações</label>
+            <textarea id="evento-observacoes" rows="3"></textarea>
+          </div>
+
+          <!-- Campos específicos de REUNIÃO -->
+          <div id="campo-titulo-container" class="form-group hidden">
+            <label for="evento-titulo">Título</label>
+            <select id="evento-titulo"></select>
+          </div>
+
+          <div id="campo-realizacao-container" class="form-group hidden">
+            <label for="evento-realizacao">Realização</label>
+            <select id="evento-realizacao"></select>
+          </div>
+
+          <div id="campo-publico-qtd-container" class="form-group hidden">
+            <label for="evento-publico-qtd">Quantidade de Público</label>
+            <input type="number" id="evento-publico-qtd" min="0" />
+          </div>
+
+          <div id="campo-link-container" class="form-group hidden">
+            <label for="evento-link">Link Externo</label>
+            <input type="text" id="evento-link" placeholder="https://..." />
+          </div>
+
+          <div id="campo-publico-container" class="form-group hidden">
+            <label>Públicos-Alvo</label>
+            <div id="evento-publicos-checkboxes" class="checkbox-group"></div>
+          </div>
+
+          <!-- Flags -->
+          <div class="flags-group">
+            <div class="flag-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="evento-cancelado" />
+                <span>❌ Evento Cancelado</span>
+              </label>
+            </div>
+            <div id="flag-extra-container" class="flag-item hidden">
+              <label class="checkbox-label">
+                <input type="checkbox" id="evento-extra" />
+                <span>⭐ Reunião Extraordinária</span>
+              </label>
+            </div>
+          </div>
+
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn-cancelar-evento-form" class="btn secundario">Cancelar</button>
+        <button type="submit" form="form-evento" class="btn primario">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: FORM DE TEMPLATE -->
+  <div id="template-form-container" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="template-modal-title">Novo Template</h3>
+      </div>
+      <div class="modal-body">
+        <form id="form-template">
+          <div class="form-group">
+            <label for="template-nome">Nome *</label>
+            <input type="text" id="template-nome" required />
+          </div>
+          <div class="form-group">
+            <label for="template-tipo">Tipo *</label>
+            <select id="template-tipo" required>
+              <option value="">Selecione</option>
+              <option value="convite">Convite</option>
+              <option value="lembrete">Lembrete</option>
+              <option value="cancelamento">Cancelamento</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="template-conteudo">Conteúdo *</label>
+            <textarea id="template-conteudo" rows="8" required></textarea>
+          </div>
+          <div class="form-group">
+            <label>Variáveis disponíveis:</label>
+            <div class="chips-variaveis">
+              <button type="button" class="chip-var" data-var="{{cidade}}">{{cidade}}</button>
+              <button type="button" class="chip-var" data-var="{{local}}">{{local}}</button>
+              <button type="button" class="chip-var" data-var="{{data}}">{{data}}</button>
+              <button type="button" class="chip-var" data-var="{{hora}}">{{hora}}</button>
+              <button type="button" class="chip-var" data-var="{{titulo}}">{{titulo}}</button>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn-cancelar-template" class="btn secundario">Cancelar</button>
+        <button type="submit" form="form-template" class="btn primario">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- FIREBASE -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+  <!-- APP -->
+  <script type="module" src="src/app.js"></script>
+
 </body>
 </html>
